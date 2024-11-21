@@ -1,11 +1,13 @@
-from fastapi import FastAPI, File, UploadFile, Form
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from typing import List
 from file_processing import FileProcessor
+from relevance_scoring import RelevanceScorer
 import boto3
 import os
 from io import BytesIO
 import tempfile
 import json
+import numpy as np
 
 app = FastAPI()
 
@@ -16,6 +18,9 @@ s3_client = boto3.client(
     aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY')
 )
 BUCKET_NAME = "docunest-db"
+
+# Initialize the relevance scorer
+scorer = RelevanceScorer()
 
 @app.post("/upload/")
 async def upload_files(
@@ -42,10 +47,24 @@ async def upload_files(
         # Step 3: Chunk the parsed content
         chunks = processor.chunk_text(parsed_text)
 
-        # Step 4: Create JSON data with the chunks
-        json_data = processor.create_json_data(chunks)
+        # Step 4: Generate embeddings for each chunk
+        chunk_embeddings = scorer.generate_embeddings(chunks)
 
-        # Step 5: Upload the JSON data to S3
+        # Step 5: Create JSON data with the chunks and embeddings
+        json_data = {
+            "FileName": file.filename,
+            "AssistantID": assistant_id,
+            "Content": [
+                {
+                    "chunk_id": i + 1,
+                    "text": chunk,
+                    "embedding": embedding.tolist()  # Convert numpy array to list for JSON serialization
+                }
+                for i, (chunk, embedding) in enumerate(zip(chunks, chunk_embeddings))
+            ]
+        }
+
+        # Step 6: Upload the JSON data to S3
         json_bytes = BytesIO(json.dumps(json_data).encode("utf-8"))
         s3_key = f"Assistant-{assistant_id}/{file.filename}.json"
         s3_client.upload_fileobj(json_bytes, BUCKET_NAME, s3_key)
@@ -54,3 +73,33 @@ async def upload_files(
         os.remove(temp_path)
     
     return {"message": f"{len(files)} files processed and uploaded for Assistant-{assistant_id}"}
+
+@app.get("/test_relevancy/")
+async def test_relevancy(assistant_id: str, filename: str):
+    # Hardcoded query for testing
+    query = "What are the aims and objectives of the project ?"
+
+    # Step 1: Download the JSON data from S3
+    s3_key = f"Assistant-{assistant_id}/{filename}.json"
+    try:
+        json_obj = s3_client.get_object(Bucket=BUCKET_NAME, Key=s3_key)
+        json_data = json.loads(json_obj['Body'].read().decode('utf-8'))
+    except s3_client.exceptions.NoSuchKey:
+        raise HTTPException(status_code=404, detail="File not found in S3.")
+
+    # Step 2: Extract chunks and embeddings from JSON data
+    chunks = [item['text'] for item in json_data["Content"]]
+    chunk_embeddings = np.array([item['embedding'] for item in json_data["Content"]])
+
+    # Step 3: Ensure chunk_embeddings is a 2D array
+    if chunk_embeddings.ndim == 3:  # Fix if chunk_embeddings has an extra dimension
+        chunk_embeddings = chunk_embeddings.squeeze(axis=1)
+
+    # Step 4: Generate embedding for the hardcoded query
+    query_embedding = scorer.generate_embeddings([query])[0]
+
+    # Step 5: Calculate relevancy and get the top relevant chunks
+    top_chunks = scorer.get_most_relevant_chunk(query, chunks, chunk_embeddings, top_n=10)
+
+    # Step 6: Return the relevant chunks
+    return {"query": query, "top_chunks": [{"text": chunk, "score": score} for chunk, score in top_chunks]}
