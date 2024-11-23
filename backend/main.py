@@ -77,7 +77,7 @@ async def upload_files(
 @app.get("/test_relevancy/")
 async def test_relevancy(assistant_id: str, filename: str):
     # Hardcoded query for testing
-    query = "What are the aims and objectives of the project ?"
+    query = "Who is applying for JP Morgan Chase?"
 
     # Step 1: Download the JSON data from S3
     s3_key = f"Assistant-{assistant_id}/{filename}.json"
@@ -92,7 +92,7 @@ async def test_relevancy(assistant_id: str, filename: str):
     chunk_embeddings = np.array([item['embedding'] for item in json_data["Content"]])
 
     # Step 3: Ensure chunk_embeddings is a 2D array
-    if chunk_embeddings.ndim == 3:  # Fix if chunk_embeddings has an extra dimension
+    if chunk_embeddings.ndim == 3: 
         chunk_embeddings = chunk_embeddings.squeeze(axis=1)
 
     # Step 4: Generate embedding for the hardcoded query
