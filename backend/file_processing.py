@@ -3,6 +3,7 @@ import json
 from PyPDF2 import PdfReader
 from docx import Document
 from typing import List
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 class FileProcessor:
     def __init__(self, file_path: str, file_name: str, assistant_id: str, content_type: str):
@@ -26,8 +27,13 @@ class FileProcessor:
 
     def chunk_text(self, text: str, chunk_size: int = 300) -> List[str]:
         """Splits the parsed text into chunks of specified word count."""
-        words = text.split()
-        return [' '.join(words[i:i + chunk_size]) for i in range(0, len(words), chunk_size)]
+        splitter = RecursiveCharacterTextSplitter(
+            chunk_size=chunk_size,
+            chunk_overlap=50,
+            separators=["\n\n", "\n", ".", " "]
+        )
+        return splitter.split_text(text)
+        
 
     def create_json_data(self, chunks: List[str]) -> dict:
         """Creates a JSON structure for the document with filename, assistant ID, and chunks."""
