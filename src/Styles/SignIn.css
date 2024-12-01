@@ -1,0 +1,14 @@
+.header-container{
+    display: flex;
+    space-between: space-between;
+    align-items: center;
+    border: 1px solid lightgray;
+}
+
+.header-title{
+    display: flex;
+    align-items: center;
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-left: 1rem;
+}
