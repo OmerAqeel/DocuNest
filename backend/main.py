@@ -1,4 +1,6 @@
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 from typing import List
 from file_processing import FileProcessor
 from relevance_scoring import RelevanceScorer
@@ -11,6 +13,15 @@ import numpy as np
 
 app = FastAPI()
 
+# Allowing requests from your frontend (localhost:5173)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],  # Update with your frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all methods
+    allow_headers=["*"],  # Allow all headers
+)
+
 # Initialize S3 client
 s3_client = boto3.client(
     's3',
@@ -18,6 +29,42 @@ s3_client = boto3.client(
     aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY')
 )
 BUCKET_NAME = "docunest-db"
+
+# Initialize dynamodb client
+dynamodb = boto3.resource('dynamodb',
+                            aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+                            aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'),  
+                            region_name='eu-north-1'
+                        )
+
+# Initialize the table
+table = dynamodb.Table('Users')
+
+# Pydantic model for user data
+class User(BaseModel):
+    user_id: str
+    name: str
+    email: str
+    password: str
+
+@app.post("/signup/")
+async def signup(user: User):
+    table = dynamodb.Table("Users")
+
+    try:
+        # Save user data to the DynamoDB table
+        table.put_item(
+            Item={
+                "user_id": user.user_id,
+                "Name": user.name,
+                "email": user.email,
+                "Password": user.password
+            }
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save user: {e}")
+
+    return {"message": "User saved successfully"}
 
 # Initialize the relevance scorer
 scorer = RelevanceScorer()
