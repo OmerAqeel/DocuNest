@@ -22,4 +22,35 @@
   align-items: center;
   justify-content: center;
   margin: 50 auto;
+  height: 60vh;
+  width: 60vw;
+}
+
+.continue-btn{
+  opacity: 0.2;
+  cursor: not-allowed;
+}
+
+
+.continue-btn-valid{
+  opacity: 1;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.email-input {
+  animation: slideIn 0.3s ease-out;
+}
+
+.password-input {
+  animation: slideIn 0.3s ease-out;
 }
