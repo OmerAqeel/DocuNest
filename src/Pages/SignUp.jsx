@@ -3,7 +3,7 @@ import axios from "axios";
 import { v4 as uuidv4 } from "uuid"; // Corrected import
 import { useEffect, useState } from "react";
 import { VscHubot } from "react-icons/vsc";
-import "../Styles/SignIn.css";
+import "../Styles/SignUp.css";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FaChevronRight } from "react-icons/fa";
@@ -118,12 +118,6 @@ export const SignUp = () => {
 
   return (
     <>
-      <div className="header-container">
-        <h1 className="header-title">
-          <VscHubot size={35}/> DocuNest
-        </h1>
-        <Button className="signIn-btn">Sign In</Button>
-      </div>
       <div className="signIn-content">
         <Card className="signUp-card">
           <CardHeader>
