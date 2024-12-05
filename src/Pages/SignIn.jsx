@@ -5,12 +5,12 @@ import { VscHubot } from "react-icons/vsc";
 import "../Styles/SignIn.css";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AlertCircle } from "lucide-react"
+import { AlertCircle } from "lucide-react";
 import {
   Alert,
   AlertDescription,
   AlertTitle,
-} from "@/components/ui/alert"
+} from "@/components/ui/alert";
 import {
   Card,
   CardContent,
@@ -19,6 +19,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useNavigate } from "react-router-dom";
 
 export const SignIn = () => {
   const [valid, setValid] = useState("");
@@ -43,23 +44,28 @@ export const SignIn = () => {
     }
   }, [emailEntered]);
 
+  const navigate = useNavigate();
+
   const signInUser = async (email, password) => {
     setLoading(true); // Start spinner
-    const MIN_SPINNER_TIME = 500; // 1 second
-  
+    const MIN_SPINNER_TIME = 500; 
     const startTime = Date.now(); // Record the start time
+
     try {
       const response = await axios.post("http://localhost:8000/signin/", { email, password });
       const token = response.data.access_token;
       sessionStorage.setItem("authToken", token);
       setWrongCredentials(false);
+
+      // Redirect to Dashboard
+      navigate("/dashboard");
     } catch (error) {
       console.error(error);
       setWrongCredentials(true);
     } finally {
       const elapsedTime = Date.now() - startTime;
       const remainingTime = Math.max(MIN_SPINNER_TIME - elapsedTime, 0);
-  
+
       // Ensure the spinner is visible for at least 1 second
       setTimeout(() => {
         setLoading(false); // Stop spinner

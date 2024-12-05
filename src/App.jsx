@@ -6,6 +6,7 @@ import { Navbar } from './Components/Navbar';
 import { SignIn } from './Pages/SignIn';
 import { Dashboard } from './Pages/Dashboard';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import ProtectedRoute from "./ProtectedRoute";
 
 function App() {
   return (
@@ -19,7 +20,14 @@ function App() {
         <Route path="/signup" element={<SignUp />} />
       </Routes>
       <Routes>
-        <Route path="/dashboard" element={<Dashboard />} />
+      <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </div>
     </Router>
