@@ -34,17 +34,6 @@
     }
 }
 
-.alert-container {
-    margin-right: 20vw;
-    margin-left: 20vw;
-    margin-top: 3vh;
-    opacity: 0; /* Default state */
-}
-
-.alert-container.fade-in {
-    animation: fadeIn 0.5s ease-out forwards;
-}
-
 @keyframes fadeIn {
     from {
         opacity: 0;
