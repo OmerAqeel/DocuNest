@@ -1,11 +1,35 @@
 import React from 'react'
 import { VscHubot } from 'react-icons/vsc'
-import { Button } from "@/components/ui/button";
 import "../Styles/Navbar.css";
 import { Link, useLocation } from 'react-router-dom';
+import {User} from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
+import { Button } from "@/components/ui/button"
+import { Settings } from 'lucide-react';
+import { UserPen } from 'lucide-react';
+import { LogOut } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuPortal,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { useSelector } from "react-redux";
 
 export const Navbar = () => {
     const location = useLocation();
+
+    const userData = useSelector((state) => state.user.userData);
+    console.log(userData);
+  
   return (
     <div className="header-container">
         <h1 className="header-title">
@@ -19,7 +43,39 @@ export const Navbar = () => {
         <Link to="/signup">
           <Button className="signIn-btn">Sign Up</Button>
         </Link>
-        : null)}
+        : location.pathname === "/dashboard" ? (
+          <div className="dashboard-actions">
+            <Button className="contact-btn" variant="outline">Contact us</Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger>
+                <Button className="profile-btn" style={{
+                  borderRadius: "15px",
+                  outline: "none",
+                }}>
+                  <User size={20} color="white" />
+                  {userData?.Name}
+                  <ChevronDown size={20} color="white" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuGroup>
+                  <DropdownMenuItem>
+                    <UserPen size={15} />
+                    <Link to="/profile">Profile</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <Settings size={15} />
+                    <Link to="/settings">Settings</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <LogOut size={15} />
+                    <Link to="/logout">Logout</Link>
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        ) : null)}
       </div>
   )
 }

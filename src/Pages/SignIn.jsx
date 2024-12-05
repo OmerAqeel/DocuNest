@@ -20,6 +20,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { setUserData } from "../store/userSlice";
 
 export const SignIn = () => {
   const [valid, setValid] = useState("");
@@ -27,6 +29,7 @@ export const SignIn = () => {
   const [passwordEntered, setPasswordEntered] = useState("");
   const [wrongCredentials, setWrongCredentials] = useState(false);
   const [loading, setLoading] = useState(false);
+  const dispatch = useDispatch();
 
   const handleEmailChange = (e) => {
     setEmailEntered(e.target.value);
@@ -45,31 +48,28 @@ export const SignIn = () => {
   }, [emailEntered]);
 
   const navigate = useNavigate();
-
+  
   const signInUser = async (email, password) => {
-    setLoading(true); // Start spinner
-    const MIN_SPINNER_TIME = 500; 
-    const startTime = Date.now(); // Record the start time
-
+    setLoading(true);
     try {
       const response = await axios.post("http://localhost:8000/signin/", { email, password });
       const token = response.data.access_token;
       sessionStorage.setItem("authToken", token);
-      setWrongCredentials(false);
-
-      // Redirect to Dashboard
+  
+      // Fetch user data
+      const userResponse = await axios.get("http://localhost:8000/userdata", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+  
+      // Dispatch user data to Redux
+      dispatch(setUserData(userResponse.data));
+  
       navigate("/dashboard");
     } catch (error) {
       console.error(error);
       setWrongCredentials(true);
     } finally {
-      const elapsedTime = Date.now() - startTime;
-      const remainingTime = Math.max(MIN_SPINNER_TIME - elapsedTime, 0);
-
-      // Ensure the spinner is visible for at least 1 second
-      setTimeout(() => {
-        setLoading(false); // Stop spinner
-      }, remainingTime);
+      setLoading(false);
     }
   };
 

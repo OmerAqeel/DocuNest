@@ -14,3 +14,15 @@
     font-weight: bold;
     margin-left: 1rem;
   }
+
+  .dashboard-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem; /* Adds spacing between the buttons */
+  }
+  
+  .contact-btn {
+    /* Adjust button styling as needed */
+    border: 1px solid lightgray;
+  }
+  

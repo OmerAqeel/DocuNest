@@ -12,7 +12,7 @@ ALGORITHM = "HS256"
 
 def create_access_token(data: dict, expires_delta: timedelta):
     to_encode = data.copy()
-    expire = datetime.now() + expires_delta
+    expire = datetime.now() + expires_delta  # Use UTC for consistency
     to_encode.update({"exp": expire})
     secret_key = get_secret_key()
     encoded_jwt = jwt.encode(to_encode, secret_key, algorithm=ALGORITHM)
