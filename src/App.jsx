@@ -4,7 +4,9 @@ import { useState } from 'react';
 import { SignUp } from './Pages/SignUp';
 import { Navbar } from './Components/Navbar';
 import { SignIn } from './Pages/SignIn';
+import { Dashboard } from './Pages/Dashboard';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import ProtectedRoute from "./ProtectedRoute";
 
 function App() {
   return (
@@ -16,6 +18,16 @@ function App() {
       </Routes>
       <Routes>
         <Route path="/signup" element={<SignUp />} />
+      </Routes>
+      <Routes>
+      <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </div>
     </Router>

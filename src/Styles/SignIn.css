@@ -1,0 +1,44 @@
+@keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  
+.alert-container {
+    margin-right: 20vw;
+    margin-left: 20vw;
+    margin-top: 3vh;
+    opacity: 0; /* Default state */
+}
+  
+.alert-container.fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+}
+
+.spinner {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid rgba(255, 255, 255, 0.3); /* Spinner background color */
+    border-radius: 50%;
+    border-top-color: white; /* Spinner color */
+    animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
