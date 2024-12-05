@@ -1,0 +1,20 @@
+@keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  
+  .alert-container {
+    margin-right: 20vw;
+    margin-left: 20vw;
+    margin-top: 3vh;
+    opacity: 0; /* Default state */
+  }
+  
+  .alert-container.fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+  }
+  

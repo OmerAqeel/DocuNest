@@ -1,6 +1,6 @@
 import React from "react";
 import axios from "axios";
-import { v4 as uuidv4 } from "uuid"; // Corrected import
+import { v4 as uuidv4 } from "uuid";
 import { useEffect, useState } from "react";
 import { VscHubot } from "react-icons/vsc";
 import "../Styles/SignUp.css";
