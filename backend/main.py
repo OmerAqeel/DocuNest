@@ -1,6 +1,6 @@
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from typing import List
 from file_processing import FileProcessor
 from relevance_scoring import RelevanceScorer
@@ -10,6 +10,9 @@ from io import BytesIO
 import tempfile
 import json
 import numpy as np
+from passlib.context import CryptContext
+from datetime import datetime, timedelta
+from jwtAuthentication import create_access_token
 
 app = FastAPI()
 
@@ -40,25 +43,46 @@ dynamodb = boto3.resource('dynamodb',
 # Initialize the table
 table = dynamodb.Table('Users')
 
-# Pydantic model for user data
+# Initialize password context
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# Model for Sign-Up requests
 class User(BaseModel):
     user_id: str
     name: str
-    email: str
+    email: EmailStr
     password: str
+
+# Model for Sign-In requests
+class SignInRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+
+@app.post("/signin/")
+async def signin(request: SignInRequest):
+    email = request.email
+    password = request.password
+
+    response = table.get_item(Key={"email": email})
+    user = response.get("Item")
+    if not user or not pwd_context.verify(password, user["Password"]):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    access_token = create_access_token(data={"sub": user["user_id"]}, expires_delta=timedelta(hours=1))
+    return {"access_token": access_token, "token_type": "bearer"}
 
 @app.post("/signup/")
 async def signup(user: User):
-    table = dynamodb.Table("Users")
-
+    hashed_password = pwd_context.hash(user.password)
     try:
-        # Save user data to the DynamoDB table
         table.put_item(
             Item={
                 "user_id": user.user_id,
                 "Name": user.name,
                 "email": user.email,
-                "Password": user.password
+                "Password": hashed_password,
+                "created_at": datetime.now().isoformat(),
             }
         )
     except Exception as e:

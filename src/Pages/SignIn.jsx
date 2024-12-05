@@ -16,6 +16,44 @@ import {
 
 export const SignIn = () => {
   const [valid, setValid] = useState("");
+  const [emailEntered, setEmailEntered] = useState("");
+  const [passwordEntered, setPasswordEntered] = useState("");
+
+  const handleEmailChange = (e) => {
+    setEmailEntered(e.target.value);
+    console.log(emailEntered);
+  };
+
+  const handlePasswordChange = (e) => {
+    setPasswordEntered(e.target.value);
+    console.log(passwordEntered);
+  };
+
+  useEffect(() => {
+    if (emailEntered.length > 0) {
+      setValid("-valid");
+    } else {
+      setValid("");
+    }
+  }, [emailEntered]);
+
+  const signInUser = async (email, password) => {
+    try {
+      const response = await axios.post("http://localhost:8000/signin/", { email, password });
+      const token = response.data.access_token;
+      sessionStorage.setItem("authToken", token);
+    } catch (error) {
+      console.error("Error signing in:", error.response?.data || error.message);
+    }
+  };
+  
+  const apiRequest = async () => {
+    const token = sessionStorage.getItem("authToken");
+    const response = await axios.get("http://localhost:8000/protected-route/", {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+  };
+
   return (
     <>
       <div className="signIn-content">
@@ -41,6 +79,8 @@ export const SignIn = () => {
               style={{
                 width: "40vw",
               }}
+              onChange={handleEmailChange}
+              value={emailEntered}
             />
             <br />
             <Input
@@ -50,10 +90,14 @@ export const SignIn = () => {
               style={{
                 width: "40vw",
               }}
+              onChange={handlePasswordChange}
+              value={passwordEntered}
             />
           </CardContent>
           <CardFooter>
-            <Button >Sign In</Button>
+            <Button className={`continue-btn${valid}`} 
+              onClick={() => signInUser(emailEntered, passwordEntered)}
+            >Sign In</Button>
           </CardFooter>
         </Card>
       </div>
