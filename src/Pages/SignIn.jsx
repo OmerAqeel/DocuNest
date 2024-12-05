@@ -25,6 +25,7 @@ export const SignIn = () => {
   const [emailEntered, setEmailEntered] = useState("");
   const [passwordEntered, setPasswordEntered] = useState("");
   const [wrongCredentials, setWrongCredentials] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleEmailChange = (e) => {
     setEmailEntered(e.target.value);
@@ -43,6 +44,10 @@ export const SignIn = () => {
   }, [emailEntered]);
 
   const signInUser = async (email, password) => {
+    setLoading(true); // Start spinner
+    const MIN_SPINNER_TIME = 500; // 1 second
+  
+    const startTime = Date.now(); // Record the start time
     try {
       const response = await axios.post("http://localhost:8000/signin/", { email, password });
       const token = response.data.access_token;
@@ -51,18 +56,16 @@ export const SignIn = () => {
     } catch (error) {
       console.error(error);
       setWrongCredentials(true);
+    } finally {
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(MIN_SPINNER_TIME - elapsedTime, 0);
+  
+      // Ensure the spinner is visible for at least 1 second
+      setTimeout(() => {
+        setLoading(false); // Stop spinner
+      }, remainingTime);
     }
   };
-
-  // Auto-hide alert after 3 seconds
-  useEffect(() => {
-    if (wrongCredentials) {
-      const timer = setTimeout(() => {
-        setWrongCredentials(false);
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [wrongCredentials]);
 
   return (
     <>
@@ -105,7 +108,11 @@ export const SignIn = () => {
           </CardContent>
           <CardFooter>
             <Button className={`continue-btn${valid}`} onClick={() => signInUser(emailEntered, passwordEntered)}>
-              Sign In
+              {loading ? (
+                <span className="spinner" style={{ borderTopColor: "white" }} />
+              ) : (
+                "Sign In"
+              )}
             </Button>
           </CardFooter>
         </Card>
