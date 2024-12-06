@@ -1,5 +1,7 @@
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import OAuth2PasswordBearer
+from fastapi import Depends
 from pydantic import BaseModel, EmailStr
 from typing import List
 from file_processing import FileProcessor
@@ -12,9 +14,14 @@ import json
 import numpy as np
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
-from jwtAuthentication import create_access_token
+from jwtAuthentication import create_access_token, get_secret_key
+from jose import jwt, JWTError
+
+
 
 app = FastAPI()
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="signin")
 
 # Allowing requests from your frontend (localhost:5173)
 app.add_middleware(
@@ -69,7 +76,11 @@ async def signin(request: SignInRequest):
     if not user or not pwd_context.verify(password, user["Password"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    access_token = create_access_token(data={"sub": user["user_id"]}, expires_delta=timedelta(hours=1))
+    # Include email in the token payload
+    access_token = create_access_token(
+        data={"sub": user["user_id"], "email": user["email"]}, 
+        expires_delta=timedelta(hours=1)
+    )
     return {"access_token": access_token, "token_type": "bearer"}
 
 @app.post("/signup/")
@@ -89,6 +100,27 @@ async def signup(user: User):
         raise HTTPException(status_code=500, detail=f"Failed to save user: {e}")
 
     return {"message": "User saved successfully"}
+
+
+@app.get("/userdata")
+async def get_user_data(token: str = Depends(oauth2_scheme)):
+    secret_key = get_secret_key()
+    try:
+        payload = jwt.decode(token, secret_key, algorithms=["HS256"])
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    email = payload.get("email")
+    if not email:
+        raise HTTPException(status_code=401, detail="Invalid token payload")
+
+    # Fetch user data from DynamoDB using email
+    response = table.get_item(Key={"email": email})
+    user_data = response.get("Item")
+    if not user_data:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return user_data
 
 # Initialize the relevance scorer
 scorer = RelevanceScorer()
