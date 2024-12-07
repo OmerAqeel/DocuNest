@@ -93,6 +93,7 @@ async def signup(user: User):
                 "Name": user.name,
                 "email": user.email,
                 "Password": hashed_password,
+                "assistants" : [],
                 "created_at": datetime.now().isoformat(),
             }
         )
