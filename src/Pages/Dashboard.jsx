@@ -1,7 +1,9 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useState } from "react";
+import axios from "axios";
 import { Button } from "@/components/ui/button";
 import "../Styles/Dashboard.css";
+import { v4 as uuidv4 } from "uuid";
 import {
   Table,
   TableBody,
@@ -19,87 +21,279 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuPortal,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Plus } from "lucide-react";
 import { Ellipsis } from "lucide-react";
-import { FileUp } from 'lucide-react';
-import { Upload } from 'lucide-react';
+import { Trash } from "lucide-react";
+import { Upload } from "lucide-react";
+import { Pencil } from 'lucide-react';
+import { FaRegFilePdf } from "react-icons/fa6";
+import { TbFileTypeDocx } from "react-icons/tb";
+import { IoCheckmarkDone } from "react-icons/io5";
 import { useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
+import { setUserData } from "../store/userSlice";
+import { toast, Toaster } from "sonner";
 
 export const Dashboard = () => {
+  const dispatch = useDispatch();
   const user = useSelector((state) => state.user.userData);
-
   const [newBtnClicked, setNewBtnClicked] = useState(false);
+  const [assistantName, setAssistantName] = useState("");
+  const [assistantDescription, setAssistantDescription] = useState("");
+  const [filesArray, setFilesArray] = useState([]);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [fileToDelete, setFileToDelete] = useState(null);
+  const [validAssistant, setValidAssistant] = useState(false);
+  const [hoveredAssistantId, setHoveredAssistantId] = useState(null);
+  const [loading, setLoading] = useState(false); // Track loading state
+  const [loadingMessage, setLoadingMessage] = useState(""); // Dynamic loading message
 
   let assistants = user.assistants;
 
   let assistantsLength = assistants.length;
 
   const handleNewBtnClick = () => {
-    if(newBtnClicked) {
+    setNewBtnClicked(!newBtnClicked);
+  };
+
+  const handleFileUpload = (event) => {
+    const files = Array.from(event.target.files); // Directly store file objects
+    setFilesArray([...filesArray, ...files]); // Merge with existing files
+  };
+
+  const handleFileDelete = (file) => {
+    setFilesArray(filesArray.filter((f) => f !== file));
+  };
+
+  const handleAssistantNameChange = (e) => {
+    setAssistantName(e.target.value);
+  };
+
+  const handleAssistantDescriptionChange = (e) => {
+    setAssistantDescription(e.target.value);
+  };
+
+  const handleCreateAssistant = async () => {
+    const assistantId = uuidv4(); // Generate a unique ID for the assistant
+    const newAssistant = {
+      id: assistantId,
+      name: assistantName,
+      description: assistantDescription,
+      files: filesArray,
+      lastOpened: new Date().toISOString(), // Set the creation time
+    };
+  
+    try {
+      // Send the new assistant to the backend
+      const response = await axios.post(
+        "http://localhost:8000/create-assistant",
+        newAssistant,
+        {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+          },
+        }
+      );
+  
+      // Get the updated user data from the response
+      const updatedUserData = response.data;
+  
+      // Update Redux state with the new assistant
+      dispatch(setUserData(updatedUserData));
+  
+      // Upload files to S3
+      await handleFileUploadToS3();
+  
+      // Reset form and close modal
+      setAssistantName("");
+      setAssistantDescription("");
+      setFilesArray([]);
       setNewBtnClicked(false);
+  
+      // Display success message
+      toast.success(`Assistant "${assistantName}" created successfully!`, {
+        icon: <IoCheckmarkDone style={{ color: "white" }} size={20} />,
+        className: "custom-toast",
+      });
+    } catch (error) {
+      console.error("Error creating assistant:", error);
+  
+      // Display user-friendly error message
+      alert(
+        error.response?.data?.detail ||
+          "Failed to create assistant. Please try again."
+      );
     }
-    else {
-      setNewBtnClicked(true); 
+  };
+  
+
+  const handleFileUploadToS3 = async (assistantId) => {
+    const formData = new FormData();
+  
+    // Add files to formData
+    filesArray.forEach((file) => {
+      formData.append("files", file); // Append the File objects
+    });
+  
+    // Add assistant_id, assistant_name, and user_id to formData
+    formData.append("assistant_id", assistantId); // Pass correct assistantId
+    formData.append("assistant_name", assistantName); // Pass the assistant's name
+    formData.append("user_id", user.user_id); // Pass user_id from Redux
+  
+    try {
+      // Call the backend API to upload files
+      const response = await axios.post("http://localhost:8000/upload/", formData, {
+        headers: {
+          Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
+  
+      console.log(response.data);
+      toast.success("Files uploaded successfully!");
+    } catch (error) {
+      console.error("Error uploading files:", error);
     }
-  }
+  };
+
+
+  const formatDate = (isoDate) => {
+    const date = new Date(isoDate);
+    return date.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  useEffect(() => {
+    if (
+      assistantName.length > 0 &&
+      assistantDescription.length > 0 &&
+      filesArray.length > 0
+    ) {
+      setValidAssistant(true);
+    } else {
+      setValidAssistant(false);
+    }
+  }, [assistantName, assistantDescription, filesArray]);
+
   return (
     <>
       <br />
       <br />
+      <Toaster position="bottom-right" 
+      style={{"backgroundColor": "black", "color": "white"}}
+      />
       <div className="table-header-container">
         <h1 className="table-title">Assistants</h1>
         <Button
           className="button"
-          style={{ "border-radius": "10px",
-            "width": "100px",
-           }}
-          variant="outline"
+          style={{ borderRadius: "10px", width: "100px" }}
           onClick={handleNewBtnClick}
         >
-          <Plus />New
+          <Plus />
+          New
         </Button>
       </div>
       <hr />
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[100px]">ID</TableHead>
             <TableHead>Name</TableHead>
             <TableHead>Last Opened</TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody>
-          <TableRow>
-            {assistantsLength === 0 && (
+        <TableBody className="table-body-container">
+          {assistantsLength === 0 ? (
+            <TableRow>
               <TableCell colSpan="4" className="text-center">
-                No assistants found
+                No assistants created
               </TableCell>
-            )}
-            {assistants.map((assistant) => (
-              <>
-                <TableCell>{assistant.id}</TableCell>
+            </TableRow>
+          ) : (
+            assistants.map((assistant) => (
+              <TableRow
+                key={assistant.id}
+                onMouseEnter={() => setHoveredAssistantId(assistant.id)}
+                onMouseLeave={() => setHoveredAssistantId(null)}
+              >
                 <TableCell>{assistant.name}</TableCell>
-                <TableCell>{assistant.lastOpened}</TableCell>
-                <TableCell className="text-right">
-                  <Ellipsis />
-                </TableCell>
-              </>
-            ))}
-          </TableRow>
+                <TableCell>{formatDate(assistant.lastOpened)}</TableCell>
+                {
+                
+                hoveredAssistantId === assistant.id ? (
+                  <>
+                  <TableCell
+                  className="open-btn-cell"
+                  >
+                  <Button
+                  variant="outline"
+                  style={{ borderRadius: "10px", width: "100px",
+                   }}
+                  >Open</Button>
+                  </TableCell>
+                  </>
+                ):
+                (
+                  <TableCell></TableCell>
+                )
+                }
+                <div className="ellipsis-cell-container">
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      style={{ borderRadius: "50%" }}
+                    >
+                    <Ellipsis />
+                    </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                    onMouseEnter={() => setHoveredAssistantId(null)}
+                    >
+                      <DropdownMenuItem>
+                        <Pencil size={15} />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem>
+                        <Trash size={15}  color="red"/>
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </div>
+              </TableRow>
+            ))
+          )}
         </TableBody>
       </Table>
       {newBtnClicked && (
         <div className="modal-overlay">
           <Card className="modal-card">
             <div className="modal-close-btn">
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={handleNewBtnClick}
-              >
+              <Button variant="ghost" size="icon" onClick={handleNewBtnClick}>
                 ✕
               </Button>
             </div>
@@ -110,54 +304,98 @@ export const Dashboard = () => {
               <div className="modal-content">
                 <div>
                   <div className="labels-container">
-                  <Label>Name</Label>
+                    <Label>Name</Label>
                   </div>
                   <Input
                     type="text"
                     placeholder="Enter assistant name"
                     className="mt-2"
+                    onChange={handleAssistantNameChange}
                   />
                 </div>
                 <div>
                   <div className="labels-container">
-                  <Label>Description</Label>
+                    <Label>Description</Label>
                   </div>
                   <Textarea
                     placeholder="Enter assistant description"
                     className="mt-2"
+                    onChange={handleAssistantDescriptionChange}
                   />
                 </div>
-                <br />
                 <div className="upload-btn-container">
+                  <input
+                    id="file-upload"
+                    type="file"
+                    multiple
+                    style={{ display: "none" }} // Hide input but keep it functional
+                    onChange={handleFileUpload}
+                  />
                   <Button
-                    className="upload-btn"
-                    style={{ "border-radius": "10px",
-                      "width": "100px",
-                    }}
                     variant="outline"
+                    style={{ borderRadius: "10px", width: "100px" }}
+                    onClick={() =>
+                      document.getElementById("file-upload").click()
+                    }
                   >
-                    <Upload />Upload
+                    <Upload className="mr-2" />
+                    Upload
                   </Button>
                 </div>
               </div>
-              <hr style={{
-                "marginTop": "10px",
-              }}/>
+              <hr
+                style={{
+                  marginTop: "10px",
+                }}
+              />
               <div className="files-container">
-                <p style={
-                  {
-                    "color": "#9CA3AF",
-                    "marginTop": "10px",
-                  }
-                }>No files uploaded</p>
+                {filesArray.length === 0 ? (
+                  <p
+                    style={{
+                      color: "#9CA3AF",
+                      marginTop: "10px",
+                    }}
+                  >
+                    No files uploaded
+                  </p>
+                ) : (
+                  filesArray.map((file, index) => (
+                    <>
+                      <Alert key={index} variant="outline" className="file-box">
+                        <div className="file-detail-container">
+                          <AlertDescription>
+                            {file.extension == "pdf" ? (
+                              <FaRegFilePdf size={20} />
+                            ) : (
+                              <TbFileTypeDocx size={20} />
+                            )}
+                          </AlertDescription>
+                          <AlertDescription>
+                            {file.name.split(".").slice(0, -1).join(".")}
+                          </AlertDescription>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleFileDelete(file)}
+                          style={{
+                            onHover: { color: "red", backgroundColor: "red" },
+                          }}
+                        >
+                          <Trash color="red" />
+                        </Button>
+                      </Alert>
+                    </>
+                  ))
+                )}
               </div>
             </CardContent>
             <CardFooter
-            style={{
-              "display": "flex",
-              "justifyContent": "space-between",
-              "alignItems": "center",
-            }}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
             >
               <Button
                 className="cancel-btn"
@@ -167,7 +405,9 @@ export const Dashboard = () => {
                 Cancel
               </Button>
               <Button
-                className="create-btn"
+                className={`create-btn`}
+                disabled={!validAssistant}
+                onClick={handleCreateAssistant}
               >
                 Create
               </Button>

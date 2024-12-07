@@ -33,8 +33,11 @@
 .files-container{
     display: flex;
     align-items: center;
+    flex-direction: column;
     justify-content: center;
     margin-top: 2vh;
+    max-height: 70vh;
+    max-width: 100%;
 }
 
 /*
@@ -85,4 +88,44 @@ Modal styling starts here
     justify-content: space-between;
     justify-items: center;
     align-items: center;
+  }
+
+  .hidden {
+    position: absolute;
+    width: 0;
+    height: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .file-box{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1vh;
+    height: 2.75rem;
+  }
+
+  .file-detail-container{
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+    gap: 0.5rem;
+  }
+
+  .ellipsis-cell-container{
+    display: flex;
+    justify-content: flex-end;
+    flex-direction: row;
+    gap: 0.5rem;
+  }
+
+
+  .open-btn-cell{
+    width: 2%;
+  }
+
+  .custom-toast {
+    background-color: #818589 !important; 
+    color: white !important; /* White font color */
   }
