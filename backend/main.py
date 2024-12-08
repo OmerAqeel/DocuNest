@@ -123,12 +123,43 @@ async def get_user_data(token: str = Depends(oauth2_scheme)):
     
     return user_data
 
+@app.post("/create-assistant")
+async def create_assistant(assistant: dict, token: str = Depends(oauth2_scheme)):
+    secret_key = get_secret_key()
+    try:
+        payload = jwt.decode(token, secret_key, algorithms=["HS256"])
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    email = payload.get("email")
+    if not email:
+        raise HTTPException(status_code=401, detail="Invalid token payload")
+
+    # Fetch user data from DynamoDB
+    response = table.get_item(Key={"email": email})
+    user_data = response.get("Item")
+    if not user_data:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Add the new assistant
+    if "assistants" not in user_data:
+        user_data["assistants"] = []
+    user_data["assistants"].append(assistant)
+
+    # Update DynamoDB with the new assistant
+    table.put_item(Item=user_data)
+
+    return user_data
+
+
 # Initialize the relevance scorer
 scorer = RelevanceScorer()
 
 @app.post("/upload/")
 async def upload_files(
     assistant_id: str = Form(...),
+    assistant_name: str = Form(...),
+    user_id: str = Form(...),
     files: List[UploadFile] = File(...)
 ):
     for file in files:
@@ -168,14 +199,22 @@ async def upload_files(
             ]
         }
 
-        # Step 6: Upload the JSON data to S3
+        # Step 6: Upload the file and JSON data to S3
+        # Folder structure: {user_id}/{assistant_name}/{file_name}
+        folder_path = f"{user_id}/{assistant_name}"
+        file_key = f"{folder_path}/{file.filename}"
+        json_key = f"{folder_path}/{file.filename}.json"
+
+        # Upload the file
+        s3_client.upload_file(temp_path, BUCKET_NAME, file_key)
+
+        # Upload the JSON metadata
         json_bytes = BytesIO(json.dumps(json_data).encode("utf-8"))
-        s3_key = f"Assistant-{assistant_id}/{file.filename}.json"
-        s3_client.upload_fileobj(json_bytes, BUCKET_NAME, s3_key)
-        
+        s3_client.upload_fileobj(json_bytes, BUCKET_NAME, json_key)
+
         # Remove the temporary file after processing
         os.remove(temp_path)
-    
+
     return {"message": f"{len(files)} files processed and uploaded for Assistant-{assistant_id}"}
 
 @app.get("/test_relevancy/")
