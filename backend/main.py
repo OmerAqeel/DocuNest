@@ -2,7 +2,6 @@ from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from fastapi import Depends
-from pydantic import BaseModel, EmailStr
 from typing import List
 from file_processing import FileProcessor
 from relevance_scoring import RelevanceScorer
@@ -16,8 +15,7 @@ from passlib.context import CryptContext
 from datetime import datetime, timedelta
 from jwtAuthentication import create_access_token, get_secret_key
 from jose import jwt, JWTError
-
-
+from models import User, SignInRequest
 
 app = FastAPI()
 
@@ -53,17 +51,9 @@ table = dynamodb.Table('Users')
 # Initialize password context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# Model for Sign-Up requests
-class User(BaseModel):
-    user_id: str
-    name: str
-    email: EmailStr
-    password: str
+# Initialize the relevance scorer
+scorer = RelevanceScorer()
 
-# Model for Sign-In requests
-class SignInRequest(BaseModel):
-    email: EmailStr
-    password: str
 
 
 @app.post("/signin/")
@@ -82,6 +72,8 @@ async def signin(request: SignInRequest):
         expires_delta=timedelta(hours=1)
     )
     return {"access_token": access_token, "token_type": "bearer"}
+
+
 
 @app.post("/signup/")
 async def signup(user: User):
@@ -103,6 +95,8 @@ async def signup(user: User):
     return {"message": "User saved successfully"}
 
 
+
+
 @app.get("/userdata")
 async def get_user_data(token: str = Depends(oauth2_scheme)):
     secret_key = get_secret_key()
@@ -122,6 +116,8 @@ async def get_user_data(token: str = Depends(oauth2_scheme)):
         raise HTTPException(status_code=404, detail="User not found")
     
     return user_data
+
+
 
 @app.post("/create-assistant")
 async def create_assistant(assistant: dict, token: str = Depends(oauth2_scheme)):
@@ -152,8 +148,6 @@ async def create_assistant(assistant: dict, token: str = Depends(oauth2_scheme))
     return user_data
 
 
-# Initialize the relevance scorer
-scorer = RelevanceScorer()
 
 @app.post("/upload/")
 async def upload_files(
@@ -216,6 +210,8 @@ async def upload_files(
         os.remove(temp_path)
 
     return {"message": f"{len(files)} files processed and uploaded for Assistant-{assistant_id}"}
+
+
 
 @app.get("/test_relevancy/")
 async def test_relevancy(assistant_id: str, filename: str):
