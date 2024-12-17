@@ -12,3 +12,8 @@ class User(BaseModel):
 class SignInRequest(BaseModel):
     email: EmailStr
     password: str
+
+
+# Model for Assistant requests (Create, Update, Delete)
+class DeleteAssistantRequest(BaseModel):
+    assistant_id: str

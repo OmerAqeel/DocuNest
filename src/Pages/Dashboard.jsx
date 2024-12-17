@@ -131,7 +131,7 @@ export const Dashboard = () => {
       dispatch(setUserData(updatedUserData));
 
       // Upload files to S3
-      await handleFileUploadToS3();
+      await handleFileUploadToS3(assistantId);
 
       // Reset form and close modal
       setAssistantName("");
@@ -154,6 +154,38 @@ export const Dashboard = () => {
       );
     }
   };
+
+  const handleDeleteAssistant = async (assistantId, assistantName) => {
+    setLoading(true);
+    setLoadingMessage(`Deleting assistant "${assistantName}"...`);
+    try {
+      const response = await axios.delete("http://localhost:8000/delete-assistant/", {
+        headers: {
+          Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+        },
+        data: { assistant_id: assistantId }, // Send assistant_id in request body
+      });
+
+      console.log(user.user_id);
+  
+      // Update Redux state after deletion
+      const updatedAssistants = assistants.filter((a) => a.id !== assistantId);
+      dispatch(setUserData({ ...user, assistants: updatedAssistants }));
+  
+      toast.success(`Assistant "${assistantName}" deleted successfully.`);
+    } catch (error) {
+      console.error("Error deleting assistant:", error);
+      toast.error(
+        error.response?.data?.detail ||
+          "Failed to delete assistant. Please try again."
+      );
+    } finally {
+      setLoading(false);
+      setLoadingMessage("");
+    }
+  };
+  
+  
   
 
   const handleFileUploadToS3 = async (assistantId) => {
@@ -169,6 +201,7 @@ export const Dashboard = () => {
     formData.append("assistant_name", assistantName); // Pass the assistant's name
     formData.append("user_id", user.user_id); // Pass user_id from Redux
 
+    console.log(user.user_id);
     try {
       // Call the backend API to upload files
       const response = await axios.post(
@@ -267,7 +300,6 @@ export const Dashboard = () => {
                 ) : (
                   <TableCell></TableCell>
                 )}
-                <div className="ellipsis-cell-container">
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -319,9 +351,7 @@ export const Dashboard = () => {
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                                 <AlertDialogAction
-                                  onClick={() =>
-                                    console.log("Assistant deleted")
-                                  }
+                                  onClick={() => handleDeleteAssistant(assistant.id, assistant.name)}
                                 >
                                   Delete
                                 </AlertDialogAction>
@@ -332,7 +362,6 @@ export const Dashboard = () => {
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
-                </div>
               </TableRow>
             ))
           )}

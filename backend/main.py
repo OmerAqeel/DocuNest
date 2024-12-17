@@ -15,7 +15,7 @@ from passlib.context import CryptContext
 from datetime import datetime, timedelta
 from jwtAuthentication import create_access_token, get_secret_key
 from jose import jwt, JWTError
-from models import User, SignInRequest
+from models import User, SignInRequest, DeleteAssistantRequest
 
 app = FastAPI()
 
@@ -148,6 +148,51 @@ async def create_assistant(assistant: dict, token: str = Depends(oauth2_scheme))
     return user_data
 
 
+@app.delete("/delete-assistant/")
+async def delete_assistant(
+    request: DeleteAssistantRequest, 
+    token: str = Depends(oauth2_scheme)
+):
+    # Decode the token and verify the user
+    secret_key = get_secret_key()
+    try:
+        payload = jwt.decode(token, secret_key, algorithms=["HS256"])
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    email = payload.get("email")
+    if not email:
+        raise HTTPException(status_code=401, detail="Invalid token payload")
+
+    # Extract assistant_id from the body
+    assistant_id = request.assistant_id
+
+    # Fetch user data
+    response = table.get_item(Key={"email": email})
+    user_data = response.get("Item")
+    if not user_data:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Remove the assistant
+    assistants = user_data.get("assistants", [])
+    user_data["assistants"] = [a for a in assistants if a["id"] != assistant_id]
+
+    # Update DynamoDB
+    table.put_item(Item=user_data)
+
+    # Delete S3 folder associated with the assistant
+    folder_prefix = f"{user_data['user_id']}/{assistant_id}/"
+    s3_objects = s3_client.list_objects_v2(Bucket=BUCKET_NAME, Prefix=folder_prefix).get("Contents", [])
+    if s3_objects:
+        s3_client.delete_objects(
+            Bucket=BUCKET_NAME,
+            Delete={"Objects": [{"Key": obj["Key"]} for obj in s3_objects]}
+        )
+
+    return {"message": "Assistant deleted successfully", "assistants": user_data["assistants"]}
+
+
+
 
 @app.post("/upload/")
 async def upload_files(
@@ -195,7 +240,7 @@ async def upload_files(
 
         # Step 6: Upload the file and JSON data to S3
         # Folder structure: {user_id}/{assistant_name}/{file_name}
-        folder_path = f"{user_id}/{assistant_name}"
+        folder_path = f"{user_id}/{assistant_id}"
         file_key = f"{folder_path}/{file.filename}"
         json_key = f"{folder_path}/{file.filename}.json"
 
