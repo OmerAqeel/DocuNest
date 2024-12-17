@@ -35,6 +35,17 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,7 +54,7 @@ import { Plus } from "lucide-react";
 import { Ellipsis } from "lucide-react";
 import { Trash } from "lucide-react";
 import { Upload } from "lucide-react";
-import { Pencil } from 'lucide-react';
+import { Pencil } from "lucide-react";
 import { FaRegFilePdf } from "react-icons/fa6";
 import { TbFileTypeDocx } from "react-icons/tb";
 import { IoCheckmarkDone } from "react-icons/io5";
@@ -100,7 +111,7 @@ export const Dashboard = () => {
       files: filesArray,
       lastOpened: new Date().toISOString(), // Set the creation time
     };
-  
+
     try {
       // Send the new assistant to the backend
       const response = await axios.post(
@@ -112,22 +123,22 @@ export const Dashboard = () => {
           },
         }
       );
-  
+
       // Get the updated user data from the response
       const updatedUserData = response.data;
-  
+
       // Update Redux state with the new assistant
       dispatch(setUserData(updatedUserData));
-  
+
       // Upload files to S3
-      await handleFileUploadToS3();
-  
+      await handleFileUploadToS3(assistantId);
+
       // Reset form and close modal
       setAssistantName("");
       setAssistantDescription("");
       setFilesArray([]);
       setNewBtnClicked(false);
-  
+
       // Display success message
       toast.success(`Assistant "${assistantName}" created successfully!`, {
         icon: <IoCheckmarkDone style={{ color: "white" }} size={20} />,
@@ -135,7 +146,7 @@ export const Dashboard = () => {
       });
     } catch (error) {
       console.error("Error creating assistant:", error);
-  
+
       // Display user-friendly error message
       alert(
         error.response?.data?.detail ||
@@ -143,37 +154,73 @@ export const Dashboard = () => {
       );
     }
   };
+
+  const handleDeleteAssistant = async (assistantId, assistantName) => {
+    setLoading(true);
+    setLoadingMessage(`Deleting assistant "${assistantName}"...`);
+    try {
+      const response = await axios.delete("http://localhost:8000/delete-assistant/", {
+        headers: {
+          Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+        },
+        data: { assistant_id: assistantId }, // Send assistant_id in request body
+      });
+
+      console.log(user.user_id);
+  
+      // Update Redux state after deletion
+      const updatedAssistants = assistants.filter((a) => a.id !== assistantId);
+      dispatch(setUserData({ ...user, assistants: updatedAssistants }));
+  
+      toast.success(`Assistant "${assistantName}" deleted successfully.`);
+    } catch (error) {
+      console.error("Error deleting assistant:", error);
+      toast.error(
+        error.response?.data?.detail ||
+          "Failed to delete assistant. Please try again."
+      );
+    } finally {
+      setLoading(false);
+      setLoadingMessage("");
+    }
+  };
+  
+  
   
 
   const handleFileUploadToS3 = async (assistantId) => {
     const formData = new FormData();
-  
+
     // Add files to formData
     filesArray.forEach((file) => {
       formData.append("files", file); // Append the File objects
     });
-  
+
     // Add assistant_id, assistant_name, and user_id to formData
     formData.append("assistant_id", assistantId); // Pass correct assistantId
     formData.append("assistant_name", assistantName); // Pass the assistant's name
     formData.append("user_id", user.user_id); // Pass user_id from Redux
-  
+
+    console.log(user.user_id);
     try {
       // Call the backend API to upload files
-      const response = await axios.post("http://localhost:8000/upload/", formData, {
-        headers: {
-          Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
-          "Content-Type": "multipart/form-data",
-        },
-      });
-  
+      const response = await axios.post(
+        "http://localhost:8000/upload/",
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
       console.log(response.data);
       toast.success("Files uploaded successfully!");
     } catch (error) {
       console.error("Error uploading files:", error);
     }
   };
-
 
   const formatDate = (isoDate) => {
     const date = new Date(isoDate);
@@ -200,8 +247,9 @@ export const Dashboard = () => {
     <>
       <br />
       <br />
-      <Toaster position="bottom-right" 
-      style={{"backgroundColor": "black", "color": "white"}}
+      <Toaster
+        position="bottom-right"
+        style={{ backgroundColor: "black", color: "white" }}
       />
       <div className="table-header-container">
         <h1 className="table-title">Assistants</h1>
@@ -216,7 +264,7 @@ export const Dashboard = () => {
       </div>
       <hr />
       <Table>
-        <TableHeader>
+        <TableHeader className="DataTable-header">
           <TableRow>
             <TableHead>Name</TableHead>
             <TableHead>Last Opened</TableHead>
@@ -238,52 +286,82 @@ export const Dashboard = () => {
               >
                 <TableCell>{assistant.name}</TableCell>
                 <TableCell>{formatDate(assistant.lastOpened)}</TableCell>
-                {
-                
-                hoveredAssistantId === assistant.id ? (
+                {hoveredAssistantId === assistant.id ? (
                   <>
-                  <TableCell
-                  className="open-btn-cell"
-                  >
-                  <Button
-                  variant="outline"
-                  style={{ borderRadius: "10px", width: "100px",
-                   }}
-                  >Open</Button>
-                  </TableCell>
+                    <TableCell className="open-btn-cell">
+                      <Button
+                        variant="outline"
+                        style={{ borderRadius: "10px", width: "100px" }}
+                      >
+                        Open
+                      </Button>
+                    </TableCell>
                   </>
-                ):
-                (
+                ) : (
                   <TableCell></TableCell>
-                )
-                }
-                <div className="ellipsis-cell-container">
+                )}
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      style={{ borderRadius: "50%" }}
-                    >
-                    <Ellipsis />
-                    </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                    onMouseEnter={() => setHoveredAssistantId(null)}
-                    >
-                      <DropdownMenuItem>
-                        <Pencil size={15} />
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <Trash size={15}  color="red"/>
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          style={{ borderRadius: "50%" }}
+                        >
+                          <Ellipsis />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent
+                        onMouseEnter={() => setHoveredAssistantId(null)}
+                      >
+                        <DropdownMenuItem
+                        style= {{
+                          cursor: "pointer",
+                        }}
+                        >
+                          <Pencil size={15} />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "10px",
+                                  marginLeft: "6px",
+                                  marginBottom:"2px",
+                                  cursor: "pointer",
+                                  fontSize: "14px",
+                                }}
+                              >
+                                <Trash size={15} color="red" />
+                                 Delete
+                              </div>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertTitle>Delete Assistant</AlertTitle>
+                              </AlertDialogHeader>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete this assistant?
+                                This action cannot be undone.
+                              </AlertDialogDescription>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeleteAssistant(assistant.id, assistant.name)}
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
-                </div>
               </TableRow>
             ))
           )}
