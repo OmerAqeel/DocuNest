@@ -214,9 +214,6 @@ export const Dashboard = () => {
           },
         }
       );
-
-      console.log(response.data);
-      toast.success("Files uploaded successfully!");
     } catch (error) {
       console.error("Error uploading files:", error);
     }

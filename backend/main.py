@@ -261,10 +261,10 @@ async def upload_files(
 @app.get("/test_relevancy/")
 async def test_relevancy(assistant_id: str, filename: str):
     # Hardcoded query for testing
-    query = "Who is applying for JP Morgan Chase?"
+    query = "What will be used to test the accuracy of the assistants in docunest?"
 
     # Step 1: Download the JSON data from S3
-    s3_key = f"Assistant-{assistant_id}/{filename}.json"
+    s3_key = f"{assistant_id}/string/{filename}.json"
     try:
         json_obj = s3_client.get_object(Bucket=BUCKET_NAME, Key=s3_key)
         json_data = json.loads(json_obj['Body'].read().decode('utf-8'))
@@ -283,7 +283,7 @@ async def test_relevancy(assistant_id: str, filename: str):
     query_embedding = scorer.generate_embeddings([query])[0]
 
     # Step 5: Calculate relevancy and get the top relevant chunks
-    top_chunks = scorer.get_most_relevant_chunk(query, chunks, chunk_embeddings, top_n=10)
+    top_chunks = scorer.get_most_relevant_chunk(query, chunks, chunk_embeddings, top_n=5)
 
     # Step 6: Return the relevant chunks
     return {"query": query, "top_chunks": [{"text": chunk, "score": score} for chunk, score in top_chunks]}
