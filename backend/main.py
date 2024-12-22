@@ -16,8 +16,14 @@ from datetime import datetime, timedelta
 from jwtAuthentication import create_access_token, get_secret_key
 from jose import jwt, JWTError
 from models import User, SignInRequest, DeleteAssistantRequest
+import requests
+from openai import OpenAI
 
 app = FastAPI()
+
+client = OpenAI(
+    api_key=os.getenv('OPENAI_API_KEY')
+)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="signin")
 
@@ -54,6 +60,19 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # Initialize the relevance scorer
 scorer = RelevanceScorer()
 
+# To use the OLLAMA API for generating responses from the assistant
+
+# OLLAMA_URL = "http://127.0.0.1:11434/api/generate"
+
+# @app.post("/ask")
+# async def ask_ollama(prompt: str):
+#     data = {
+#         "model": "llama2",
+#         "prompt": prompt,
+#         "stream": False,
+#     }
+#     response = requests.post(OLLAMA_URL, json=data)
+#     return response.json()
 
 
 @app.post("/signin/")
@@ -259,31 +278,89 @@ async def upload_files(
 
 
 @app.get("/test_relevancy/")
-async def test_relevancy(assistant_id: str, filename: str):
+async def test_relevancy(assistant_id: str):
     # Hardcoded query for testing
-    query = "What will be used to test the accuracy of the assistants in docunest?"
+    query = "What were the responsibilities of Omer at Eli Lilly ?"
 
-    # Step 1: Download the JSON data from S3
-    s3_key = f"{assistant_id}/string/{filename}.json"
+    # Step 1: List all JSON files in the folder
+    folder_prefix = f"{assistant_id}/string/"
     try:
-        json_obj = s3_client.get_object(Bucket=BUCKET_NAME, Key=s3_key)
-        json_data = json.loads(json_obj['Body'].read().decode('utf-8'))
-    except s3_client.exceptions.NoSuchKey:
-        raise HTTPException(status_code=404, detail="File not found in S3.")
+        # Get the list of files in the specified folder
+        response = s3_client.list_objects_v2(Bucket=BUCKET_NAME, Prefix=folder_prefix)
+        if 'Contents' not in response:
+            raise HTTPException(status_code=404, detail="No files found in S3.")
 
-    # Step 2: Extract chunks and embeddings from JSON data
-    chunks = [item['text'] for item in json_data["Content"]]
-    chunk_embeddings = np.array([item['embedding'] for item in json_data["Content"]])
+        # Filter only JSON files
+        json_files = [obj['Key'] for obj in response['Contents'] if obj['Key'].endswith('.json')]
+        if not json_files:
+            raise HTTPException(status_code=404, detail="No JSON files found in S3 folder.")
 
-    # Step 3: Ensure chunk_embeddings is a 2D array
-    if chunk_embeddings.ndim == 3: 
-        chunk_embeddings = chunk_embeddings.squeeze(axis=1)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch files: {str(e)}")
 
-    # Step 4: Generate embedding for the hardcoded query
+    # Step 2: Combine chunks, embeddings, and filenames
+    all_chunks = []
+    all_embeddings = []
+    chunk_file_map = []  # Map chunks to filenames
+
+    try:
+        for file_key in json_files:
+            # Extract file name from S3 key
+            filename = file_key.split("/")[-1]  # Extract file name
+
+            # Load JSON content from S3
+            json_obj = s3_client.get_object(Bucket=BUCKET_NAME, Key=file_key)
+            json_data = json.loads(json_obj['Body'].read().decode('utf-8'))
+
+            # Extract chunks and embeddings
+            chunks = [item['text'] for item in json_data["Content"]]
+            embeddings = np.array([item['embedding'] for item in json_data["Content"]])
+
+            # Flatten embeddings if required
+            if embeddings.ndim == 3:
+                embeddings = embeddings.squeeze(axis=1)
+
+            # Append to combined lists
+            all_chunks.extend(chunks)
+            all_embeddings.append(embeddings)
+
+            # Map each chunk to its source file
+            chunk_file_map.extend([filename] * len(chunks))
+
+        # Concatenate all embeddings into one array
+        all_embeddings = np.vstack(all_embeddings)
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to process files: {str(e)}")
+
+    # Step 3: Generate embedding for the query
     query_embedding = scorer.generate_embeddings([query])[0]
 
-    # Step 5: Calculate relevancy and get the top relevant chunks
-    top_chunks = scorer.get_most_relevant_chunk(query, chunks, chunk_embeddings, top_n=5)
+    # Step 4: Calculate relevancy using combined data
+    top_chunks = scorer.get_most_relevant_chunk(query, all_chunks, all_embeddings, top_n=10)
 
-    # Step 6: Return the relevant chunks
-    return {"query": query, "top_chunks": [{"text": chunk, "score": score} for chunk, score in top_chunks]}
+    # Step 5: Return relevant chunks along with filenames
+    results = []
+    for chunk, score in top_chunks:
+        # Find the index of the chunk to get the corresponding filename
+        index = all_chunks.index(chunk)
+        results.append({
+            "text": chunk,
+            "score": score,
+            "filename": chunk_file_map[index]  # Get the filename for this chunk
+        })
+
+    completion = client.chat.completions.create(
+        model="gpt-4o",
+        max_tokens=120,
+        messages=[
+           {"role": "system", "content": "You are an expert assistant designed to provide clear, concise, and well-structured responses to queries. Your responses must be accurate, specific, and directly address the query without unnecessary explanations or comments."},
+           {"role": "user", "content": f"I need you to generate a precise and structured response to the following query: '{query}'. \n\nYou have access to:\n1. **Top Relevant Chunks**: {results}\n2. **All Chunks**: {all_chunks}\n\nYour task is to:\n- Prioritise information from the **Top Relevant Chunks**.\n- Cross-reference with **All Chunks** to ensure completeness and accuracy.\n- Avoid assumptions or speculative answers. Use only the provided data.\n- Format the output in a **structured and organised manner**.\n\n**Important Notes:**\n- Do **not** include extra comments, explanations and just be stright to the points rather than being verbose\n- Ensure the response is **factually accurate** and **specific** to the query.\n\nNow, generate the response for the given query."}  
+        ]
+    )
+
+    return {
+        "query": query,
+        "top_chunks": results,
+        "response_from_gpt-4o": completion.choices[0].message
+    }
