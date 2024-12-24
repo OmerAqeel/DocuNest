@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
 import "../Styles/Dashboard.css";
@@ -62,6 +63,7 @@ import { useSelector } from "react-redux";
 import { useDispatch } from "react-redux";
 import { setUserData } from "../store/userSlice";
 import { toast, Toaster } from "sonner";
+import { use } from "react";
 
 export const Dashboard = () => {
   const dispatch = useDispatch();
@@ -76,6 +78,7 @@ export const Dashboard = () => {
   const [hoveredAssistantId, setHoveredAssistantId] = useState(null);
   const [loading, setLoading] = useState(false); // Track loading state
   const [loadingMessage, setLoadingMessage] = useState(""); // Dynamic loading message
+  const navigate = useNavigate();
 
   let assistants = user.assistants;
 
@@ -102,6 +105,10 @@ export const Dashboard = () => {
     setAssistantDescription(e.target.value);
   };
 
+  const handleOpenAssistant = (assistantId) => {
+    navigate(`/chat/${assistantId}`); // Navigates to /chat/{assistantId}
+  };
+
   const handleCreateAssistant = async () => {
     const assistantId = uuidv4(); // Generate a unique ID for the assistant
     const newAssistant = {
@@ -123,15 +130,14 @@ export const Dashboard = () => {
           },
         }
       );
+      // Upload files to S3
+      await handleFileUploadToS3(assistantId);
 
       // Get the updated user data from the response
       const updatedUserData = response.data;
 
       // Update Redux state with the new assistant
       dispatch(setUserData(updatedUserData));
-
-      // Upload files to S3
-      await handleFileUploadToS3(assistantId);
 
       // Reset form and close modal
       setAssistantName("");
@@ -186,8 +192,6 @@ export const Dashboard = () => {
   };
   
   
-  
-
   const handleFileUploadToS3 = async (assistantId) => {
     const formData = new FormData();
 
@@ -289,6 +293,7 @@ export const Dashboard = () => {
                       <Button
                         variant="outline"
                         style={{ borderRadius: "10px", width: "100px" }}
+                        onClick={() => handleOpenAssistant(assistant.id)}
                       >
                         Open
                       </Button>

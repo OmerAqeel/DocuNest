@@ -23,9 +23,28 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useSelector } from "react-redux";
+import { useParams } from "react-router-dom";
 
 export const Navbar = () => {
   const location = useLocation();
+
+  // Extract the assistantId from the pathname
+  const match = location.pathname.match(/\/chat\/([^/]+)/);
+  const assistantId = match ? match[1] : null;
+
+
+  const user = localStorage.getItem("persist:root");
+
+  const parsedUser = JSON.parse(user).userData;
+
+  let JSONparsedUser = JSON.parse(parsedUser);
+  
+  // getting the name of the assistant from the local storage using the assistantId
+  const assistantData = JSONparsedUser?.assistants;
+
+  const assistantName = assistantData?.find((assistant) => assistant.id === assistantId)?.name;
+  console.log(assistantName);
+
 
   const userData = useSelector((state) => state.user.userData);
 
@@ -79,7 +98,30 @@ export const Navbar = () => {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-      ) : null}
+      ) : location.pathname === `/chat/${assistantId}` ? (
+        <div
+          className="assistant-name-container"
+          style={
+            assistantName
+              ? {
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginRight: "43.5vw",
+                }
+              : { display: "none" }
+          }
+          >
+          <h1 className="assistant-name"
+          style={{
+            fontSize: '20px', // Font size
+            fontWeight: 'bold',
+            fontStyle: 'italic',
+          }}
+          >{assistantName}</h1>
+        </div>
+      )
+        : null }
     </div>
   );
 };

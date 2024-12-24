@@ -16,13 +16,12 @@ from datetime import datetime, timedelta
 from jwtAuthentication import create_access_token, get_secret_key
 from jose import jwt, JWTError
 from models import User, SignInRequest, DeleteAssistantRequest
-import requests
 from openai import OpenAI
 
 app = FastAPI()
 
 client = OpenAI(
-    api_key=os.getenv('OPENAI_API_KEY')
+    api_key="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"
 )
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="signin")
