@@ -21,7 +21,7 @@ from openai import OpenAI
 app = FastAPI()
 
 client = OpenAI(
-    api_key="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"
+    api_key=""
 )
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="signin")
