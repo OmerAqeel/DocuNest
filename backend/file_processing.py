@@ -25,7 +25,7 @@ class FileProcessor:
             text = "\n".join(paragraph.text for paragraph in doc.paragraphs)
         return text
 
-    def chunk_text(self, text: str, chunk_size: int = 300) -> List[str]:
+    def chunk_text(self, text: str, chunk_size: int = 600) -> List[str]:
         """Splits the parsed text into chunks of specified word count."""
         splitter = RecursiveCharacterTextSplitter(
             chunk_size=chunk_size,

@@ -1,0 +1,40 @@
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+  }
+  
+.chat-welome-title {
+  display: flex;
+    font-size: 100px;
+    color: #333;
+  }
+  
+  @keyframes blink-cursor {
+    50% {
+      border-color: transparent; /* Makes cursor blink */
+    }
+  }
+
+  .btn-container{
+    display: flex;
+    justify-content: left;
+    margin-top: 1rem;
+    margin-left: 1rem;
+  }
+
+  .chat-box-container {
+    display: flex;
+    height: 70vh;
+    flex-direction: column;
+    margin-top: 1rem;
+  }
+
+  .chat-input-container{
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+  }
+  
