@@ -20,8 +20,11 @@ from openai import OpenAI
 
 app = FastAPI()
 
+with open("config.json", "r") as f:
+    config = json.load(f)
+    
 client = OpenAI(
-    api_key=""
+api_key=config["api-key"],
 )
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="signin")
