@@ -22,7 +22,7 @@ app = FastAPI()
 
 with open("config.json", "r") as f:
     config = json.load(f)
-    
+
 client = OpenAI(
 api_key=config["api-key"],
 )
@@ -279,13 +279,14 @@ async def upload_files(
 
 
 
-@app.get("/test_relevancy/")
-async def test_relevancy(assistant_id: str):
-    # Hardcoded query for testing
-    query = "What were the responsibilities of Omer at Eli Lilly ?"
-
+@app.get("/ask/")
+async def test_relevancy(
+    user_id: str,
+    assistant_id: str,
+    query: str
+):
     # Step 1: List all JSON files in the folder
-    folder_prefix = f"{assistant_id}/string/"
+    folder_prefix = f"{user_id}/{assistant_id}/"
     try:
         # Get the list of files in the specified folder
         response = s3_client.list_objects_v2(Bucket=BUCKET_NAME, Prefix=folder_prefix)
@@ -357,12 +358,13 @@ async def test_relevancy(assistant_id: str):
         max_tokens=120,
         messages=[
            {"role": "system", "content": "You are an expert assistant designed to provide clear, concise, and well-structured responses to queries. Your responses must be accurate, specific, and directly address the query without unnecessary explanations or comments."},
-           {"role": "user", "content": f"I need you to generate a precise and structured response to the following query: '{query}'. \n\nYou have access to:\n1. **Top Relevant Chunks**: {results}\n2. **All Chunks**: {all_chunks}\n\nYour task is to:\n- Prioritise information from the **Top Relevant Chunks**.\n- Cross-reference with **All Chunks** to ensure completeness and accuracy.\n- Avoid assumptions or speculative answers. Use only the provided data.\n- Format the output in a **structured and organised manner**.\n\n**Important Notes:**\n- Do **not** include extra comments, explanations and just be stright to the points rather than being verbose\n- Ensure the response is **factually accurate** and **specific** to the query.\n\nNow, generate the response for the given query."}  
+           {"role": "user", "content": f"I need you to generate a precise and structured response to the following query: '{query}'. \n\nYou have access to:\n1. **Top Relevant Chunks**: {results}\n\nYour task is to:\n\n- Avoid assumptions or speculative answers. Use only the provided data.\n- Format the output in a **structured and organised manner**.\n\n**Important Notes:**\n- Do **not** include extra comments, explanations and just be stright to the points rather than being verbose\n- Ensure the response is **factually accurate** and **specific** to the query.\n\nNow, generate the response for the given query."}  
         ]
     )
 
     return {
-        "query": query,
-        "top_chunks": results,
-        "response_from_gpt-4o": completion.choices[0].message
+        # "query": query,
+        # "top_chunks": results,
+        "file": results[0]["filename"],
+        "response": completion.choices[0].message.content
     }
