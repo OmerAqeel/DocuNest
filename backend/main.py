@@ -350,7 +350,8 @@ async def test_relevancy(
         results.append({
             "text": chunk,
             "score": score,
-            "filename": chunk_file_map[index]  # Get the filename for this chunk
+            "filename": chunk_file_map[index]
+              # Get the filename for this chunk
         })
 
     completion = client.chat.completions.create(
@@ -361,10 +362,12 @@ async def test_relevancy(
            {"role": "user", "content": f"I need you to generate a precise and structured response to the following query: '{query}'. \n\nYou have access to:\n1. **Top Relevant Chunks**: {results}\n\nYour task is to:\n\n- Avoid assumptions or speculative answers. Use only the provided data.\n- Format the output in a **structured and organised manner**.\n\n**Important Notes:**\n- Do **not** include extra comments, explanations and just be stright to the points rather than being verbose\n- Ensure the response is **factually accurate** and **specific** to the query.\n\nNow, generate the response for the given query."}  
         ]
     )
+    
 
     return {
         # "query": query,
         # "top_chunks": results,
-        "file": results[0]["filename"],
-        "response": completion.choices[0].message.content
+        "file": results[0]["filename"].split(".json")[0],
+        "response": completion.choices[0].message.content,
+        "highlight": results[0]["text"]
     }
