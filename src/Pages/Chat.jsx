@@ -19,9 +19,15 @@ export const Chat = () => {
   const [botMessage, setBotMessage] = useState(""); // For bot message streaming
   const typingSpeed = 50; // Speed of the typing animation (ms per letter)
   const [displaySubText, setDisplaySubText] = useState(false);
+  const [file, setFile] = useState("");
+
+  const [fileUrl, setFileUrl] = useState(null);
+  const [highlightText, setHighlightText] = useState("");
 
   const parsedUser = JSON.parse(user);
-  const userData = parsedUser?.userData ? JSON.parse(parsedUser.userData) : null;
+  const userData = parsedUser?.userData
+    ? JSON.parse(parsedUser.userData)
+    : null;
   const userName = userData?.Name || "User";
   const user_id = userData?.user_id;
 
@@ -37,7 +43,7 @@ export const Chat = () => {
         setWelcomeMessage(message.substring(0, index + 1)); // Update the state with the current substring
         index++;
         setTimeout(typeLetter, typingSpeed); // Schedule the next letter
-        if(index === message.length){
+        if (index === message.length) {
           setDisplaySubText(true);
         }
       }
@@ -52,14 +58,14 @@ export const Chat = () => {
 
   const handleSendMessage = async () => {
     if (prompt.trim() === "") return;
-  
+
     // Add user message to the chat
     const newMessage = { sender: "user", text: prompt };
     setMessages((prevMessages) => [...prevMessages, newMessage]);
-  
+
     setPrompt("");
     setShowWelcome(false); // Fade out the welcome message
-  
+
     try {
       // Call the backend endpoint
       const response = await axios.get("http://localhost:8000/ask/", {
@@ -69,13 +75,14 @@ export const Chat = () => {
           query: prompt,
         },
       });
-  
+
       // Extract the bot response and filename from the API response
-      const { response: botResponse, file } = response.data;
-  
+      const botResponse = response.data.response;
+      const file = response.data.file;
+
       // Simulate bot response animation
-      simulateBotResponse(botResponse);
-  
+      simulateBotResponse(botResponse, file);
+      setFile(file);
       // Optionally, you can log the file name or display it somewhere
       console.log("File:", file);
     } catch (error) {
@@ -83,39 +90,44 @@ export const Chat = () => {
       simulateBotResponse("Sorry, something went wrong. Please try again.");
     }
   };
-  
 
-  const simulateBotResponse = (response) => {
-    if (!response || typeof response !== "string") return; // Safety check for response
-    let index = 0; // Start at the first character
-    let currentMessage = ""; // Temporary variable to build the message
+  const simulateBotResponse = (response, file) => {
+    if (!response || typeof response !== "string") return;
 
-    setBotMessage(""); // Clear any existing bot message
-    setIsTyping(true); // Start typing animation
+    let index = 0;
+    let currentMessage = "";
+
+    setBotMessage("");
+    setIsTyping(true);
 
     const typeLetter = () => {
       if (index < response.length) {
-        currentMessage += response[index]; // Append the next character
-        setBotMessage(currentMessage); // Update the botMessage state
+        currentMessage += response[index];
+        setBotMessage(currentMessage);
         index++;
-        setTimeout(typeLetter, typingSpeed); // Schedule the next character
+        setTimeout(typeLetter, typingSpeed);
       } else {
-        setIsTyping(false); // Typing animation ends
+        setIsTyping(false);
         setMessages((prevMessages) => [
           ...prevMessages,
-          { sender: "bot", text: response },
-        ]); // Add the full response to messages
+          {
+            sender: "bot",
+            text: file
+              ? response + " \n " + `Source File: ${file}`
+              : response + " \n " + `Source File: ${file}`,
+          },
+        ]);
       }
     };
 
-    typeLetter(); // Start the typing animation
+    typeLetter();
   };
 
   const h1Style = {
-    color: 'gray', // Fill color of the text
-    WebkitTextStroke: '1px black', // Stroke size and color
-    fontSize: '60px', // Font size
-    textAlign: 'center', // Optional alignment
+    color: "gray", // Fill color of the text
+    WebkitTextStroke: "1px black", // Stroke size and color
+    fontSize: "60px", // Font size
+    textAlign: "center", // Optional alignment
   };
 
   return (
@@ -129,23 +141,24 @@ export const Chat = () => {
       <div className="chat-box-container">
         {showWelcome && (
           <div className="welcome-container">
-          <h1 className={`welcome-message ${!showWelcome ? "fade-out" : ""}`}
-          style={h1Style}
-          >
-            {welcomeMessage}
-          </h1>
-          {displaySubText && (
-          <p
-          style={
-            {
-              textAlign: 'center',
-              color: 'gray',
-              fontSize: '17px',
-              fontStyle: 'italic',
-            }
-          }
-          >Please let me know what information you'd like me to retrieve.</p>
-        )}
+            <h1
+              className={`welcome-message ${!showWelcome ? "fade-out" : ""}`}
+              style={h1Style}
+            >
+              {welcomeMessage}
+            </h1>
+            {displaySubText && (
+              <p
+                style={{
+                  textAlign: "center",
+                  color: "gray",
+                  fontSize: "17px",
+                  fontStyle: "italic",
+                }}
+              >
+                Please let me know what information you'd like me to retrieve.
+              </p>
+            )}
           </div>
         )}
 
@@ -156,14 +169,22 @@ export const Chat = () => {
               message.sender === "user" ? "user-message" : "bot-message"
             }`}
           >
-            {message.text}
+            {message.sender === "bot" ? (
+              <>
+              <ReactMarkdown>{message.text}</ReactMarkdown>
+              {/* <br /> */}
+              {/* <span>File: {file} </span> */}
+              </>
+            ) : (
+              message.text
+            )}
           </div>
         ))}
         {isTyping && (
           <div className="chat-message bot-message">
-            <ReactMarkdown>
-            {botMessage}
-            </ReactMarkdown>
+            <ReactMarkdown>{botMessage}</ReactMarkdown>
+            {/* <br /> */}
+            {/* <span>File: {file} </span> */}
           </div>
         )}
       </div>
