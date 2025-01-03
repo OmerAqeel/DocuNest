@@ -11,6 +11,7 @@ from io import BytesIO
 import tempfile
 import json
 import numpy as np
+from starlette.responses import StreamingResponse
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
 from jwtAuthentication import create_access_token, get_secret_key
@@ -42,7 +43,9 @@ app.add_middleware(
 s3_client = boto3.client(
     's3',
     aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
-    aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY')
+    aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'),
+    region_name='eu-north-1',  # Replace with your bucket's region
+    config=boto3.session.Config(signature_version='s3v4')
 )
 BUCKET_NAME = "docunest-db"
 
@@ -276,6 +279,34 @@ async def upload_files(
         os.remove(temp_path)
 
     return {"message": f"{len(files)} files processed and uploaded for Assistant-{assistant_id}"}
+
+
+@app.get("/get-file/{file_name}")
+async def get_file(file_name: str, assistant_id: str, user_id: str):
+    try:
+        file_key = f"{user_id}/{assistant_id}/{file_name}"
+        response = s3_client.get_object(Bucket=BUCKET_NAME, Key=file_key)
+        file_content = response['Body'].read()
+        content_type = response['ContentType']
+
+        # Generate presigned URL for direct S3 access
+        url = s3_client.generate_presigned_url(
+            'get_object',
+            Params={
+                'Bucket': BUCKET_NAME,
+                'Key': file_key
+            },
+            ExpiresIn=3600  # URL expires in 1 hour
+        )
+        
+        return {
+            "url": url,
+            "content_type": content_type,
+            "filename": file_name
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching file: {e}")
+
 
 
 
