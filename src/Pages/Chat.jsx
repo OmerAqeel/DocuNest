@@ -9,6 +9,16 @@ import axios from "axios";
 import ReactMarkdown from "react-markdown";
 import { Document, Page } from "react-pdf";
 import FileViewer from "./FileViewer";
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
 
 export const Chat = () => {
   const user = localStorage.getItem("persist:root");
@@ -156,6 +166,7 @@ export const Chat = () => {
   };
 
   return (
+    
     <div className="chat-container">
       <div className="btn-container">
         <Button onClick={() => window.history.back()}>
@@ -200,7 +211,7 @@ export const Chat = () => {
                   <div className="source-file-link">
                     <br />
                     {message.text.split("Source File: ")[1] && (
-                      <a
+                      <Button
                         href="#"
                         onClick={(e) => {
                           e.preventDefault();
@@ -209,13 +220,12 @@ export const Chat = () => {
                           );
                         }}
                         style={{
-                          color: "blue",
-                          textDecoration: "underline",
                           cursor: "pointer",
+                          backgroundColor: "darkgray",
                         }}
                       >
-                        Source File: {message.text.split("Source File: ")[1]}
-                      </a>
+                      {message.text.split("Source File: ")[1]}
+                      </Button>
                     )}
                   </div>
                 )}
@@ -258,7 +268,15 @@ export const Chat = () => {
       </div>
 
       {fileData.url && (
-        <FileViewer fileUrl={fileData.url} fileType={fileData.type} />
+        <div className="file-viewer">
+        <iframe
+          src={fileData.url}
+          title="File Preview"
+          width="100%"
+          height="600px"
+          style={{ border: "none" }}
+        />
+      </div>
       )}
     </div>
   );

@@ -18,6 +18,7 @@ from jwtAuthentication import create_access_token, get_secret_key
 from jose import jwt, JWTError
 from models import User, SignInRequest, DeleteAssistantRequest
 from openai import OpenAI
+import mimetypes
 
 app = FastAPI()
 
@@ -218,6 +219,7 @@ async def delete_assistant(
 
 
 
+
 @app.post("/upload/")
 async def upload_files(
     assistant_id: str = Form(...),
@@ -268,8 +270,21 @@ async def upload_files(
         file_key = f"{folder_path}/{file.filename}"
         json_key = f"{folder_path}/{file.filename}.json"
 
-        # Upload the file
-        s3_client.upload_file(temp_path, BUCKET_NAME, file_key)
+        # Determine MIME type dynamically
+        content_type, _ = mimetypes.guess_type(file.filename)
+        if not content_type:
+            content_type = "application/octet-stream"  # Default fallback
+
+        # Upload the file with appropriate content type
+        s3_client.upload_file(
+            temp_path,
+            BUCKET_NAME,
+            file_key,
+            ExtraArgs={
+                "ContentDisposition": "inline",
+                "ContentType": content_type
+            }
+        )
 
         # Upload the JSON metadata
         json_bytes = BytesIO(json.dumps(json_data).encode("utf-8"))
@@ -279,6 +294,7 @@ async def upload_files(
         os.remove(temp_path)
 
     return {"message": f"{len(files)} files processed and uploaded for Assistant-{assistant_id}"}
+
 
 
 @app.get("/get-file/{file_name}")

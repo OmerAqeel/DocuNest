@@ -1,4 +1,10 @@
-const FileViewer = ({ fileUrl, fileType }) => {
+import React, { useState } from 'react';
+import { Document, Page } from 'react-pdf';
+import { pdfjs } from 'react-pdf';
+
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+
+export const FileViewer = ({ fileUrl, fileType }) => {
     const isPDF = fileType === 'application/pdf';
     const isImage = fileType.startsWith('image/');
   
@@ -6,7 +12,8 @@ const FileViewer = ({ fileUrl, fileType }) => {
   
     const onLoadSuccess = ({ numPages }) => {
       setNumPages(numPages); // Set the total number of pages
-    };
+      };
+    
   
     if (isPDF) {
       return (
@@ -34,5 +41,8 @@ const FileViewer = ({ fileUrl, fileType }) => {
       />
     );
   };
+
+export default FileViewer;
+
   
   
