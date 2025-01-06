@@ -113,7 +113,6 @@ export const Dashboard = () => {
     }, 5000);
 
     navigate(`/chat/${assistantId}`); // Navigates to /chat/{assistantId}
-
   };
 
   const handleCreateAssistant = async () => {
@@ -166,8 +165,7 @@ export const Dashboard = () => {
         error.response?.data?.detail ||
           "Failed to create assistant. Please try again."
       );
-    }
-    finally {
+    } finally {
       setLoading(false);
     }
   };
@@ -176,19 +174,22 @@ export const Dashboard = () => {
     setLoading(true);
     setLoadingMessage(`Deleting assistant "${assistantName}"...`);
     try {
-      const response = await axios.delete("http://localhost:8000/delete-assistant/", {
-        headers: {
-          Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
-        },
-        data: { assistant_id: assistantId }, // Send assistant_id in request body
-      });
+      const response = await axios.delete(
+        "http://localhost:8000/delete-assistant/",
+        {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+          },
+          data: { assistant_id: assistantId }, // Send assistant_id in request body
+        }
+      );
 
       console.log(user.user_id);
-  
+
       // Update Redux state after deletion
       const updatedAssistants = assistants.filter((a) => a.id !== assistantId);
       dispatch(setUserData({ ...user, assistants: updatedAssistants }));
-  
+
       toast.success(`Assistant "${assistantName}" deleted successfully.`);
     } catch (error) {
       console.error("Error deleting assistant:", error);
@@ -201,8 +202,7 @@ export const Dashboard = () => {
       setLoadingMessage("");
     }
   };
-  
-  
+
   const handleFileUploadToS3 = async (assistantId) => {
     const formData = new FormData();
 
@@ -309,79 +309,91 @@ export const Dashboard = () => {
                         Open
                       </Button>
                     </TableCell>
-                    {
-                      assistantLoading ? (
-                        <TableCell>
-                          <span className="spinner" style={{ borderTopColor: "black" }} />
-                        </TableCell>
-                      ): null
-                    }
+                    {assistantLoading ? (
+                      <TableCell>
+                        <span
+                          className="spinner"
+                          style={{ borderTopColor: "black" }}
+                        />
+                      </TableCell>
+                    ) : null}
                   </>
                 ) : (
                   <TableCell></TableCell>
                 )}
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          style={{ borderRadius: "50%" }}
-                        >
-                          <Ellipsis />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent
-                        onMouseEnter={() => setHoveredAssistantId(null)}
+                <TableCell></TableCell>
+                <TableCell></TableCell>
+                <TableCell>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        style={{ borderRadius: "50%" }}
                       >
-                        <DropdownMenuItem
-                        style= {{
+                        <Ellipsis
+                          style={{
+                            marginLeft: "6vw",
+                          }}
+                        />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      onMouseEnter={() => setHoveredAssistantId(null)}
+                    >
+                      <DropdownMenuItem
+                        style={{
                           cursor: "pointer",
                         }}
-                        >
-                          <Pencil size={15} />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <div
-                                style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: "10px",
-                                  marginLeft: "6px",
-                                  marginBottom:"2px",
-                                  cursor: "pointer",
-                                  fontSize: "14px",
-                                }}
+                      >
+                        <Pencil size={15} />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "10px",
+                                marginLeft: "6px",
+                                marginBottom: "2px",
+                                cursor: "pointer",
+                                fontSize: "14px",
+                              }}
+                            >
+                              <Trash size={15} color="red" />
+                              Delete
+                            </div>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertTitle>Delete Assistant</AlertTitle>
+                            </AlertDialogHeader>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete this assistant?
+                              This action cannot be undone.
+                            </AlertDialogDescription>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() =>
+                                  handleDeleteAssistant(
+                                    assistant.id,
+                                    assistant.name
+                                  )
+                                }
                               >
-                                <Trash size={15} color="red" />
-                                 Delete
-                              </div>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertTitle>Delete Assistant</AlertTitle>
-                              </AlertDialogHeader>
-                              <AlertDialogDescription>
-                                Are you sure you want to delete this assistant?
-                                This action cannot be undone.
-                              </AlertDialogDescription>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleDeleteAssistant(assistant.id, assistant.name)}
-                                >
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
               </TableRow>
             ))
           )}
@@ -507,11 +519,14 @@ export const Dashboard = () => {
                 disabled={!validAssistant}
                 onClick={handleCreateAssistant}
               >
-                 {loading ? (
-                <span className="spinner" style={{ borderTopColor: "white" }} />
-              ) : (
-                "Create"
-              )}
+                {loading ? (
+                  <span
+                    className="spinner"
+                    style={{ borderTopColor: "white" }}
+                  />
+                ) : (
+                  "Create"
+                )}
               </Button>
             </CardFooter>
           </Card>
