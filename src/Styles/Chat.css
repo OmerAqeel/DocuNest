@@ -1,8 +1,21 @@
+.main-container {
+  display: flex;
+  flex-direction: row;
+  width: 100vw;
+}
+
 .chat-container {
     display: flex;
     flex-direction: column;
     text-align: center;
+    width: 100vw;
+    height: 95vh;
+    transition: width 0.8s ease;
   }
+
+.chat-container.mini {
+    width: 50vw;
+};
   
 .chat-welome-title {
   display: flex;
@@ -19,8 +32,8 @@
   .btn-container{
     display: flex;
     justify-content: left;
-    margin-top: 1rem;
-    margin-left: 1rem;
+    margin-top: 0.5rem;
+    margin-left: 0.5rem;
   }
 
   .chat-box-container {
@@ -104,6 +117,20 @@
     padding: 10px;
     margin-top: 10px;
   }
+
+  .file-viewer{
+    width: 50vw;
+  }
+
+  .file-viewer-header{
+    display: flex;
+    justify-content: end;
+    margin-top: 0.5rem;
+    margin-left: 1 rem;
+    margin-right: 1rem;
+    margin-bottom: 0.5rem;
+  }
+
   
 
 

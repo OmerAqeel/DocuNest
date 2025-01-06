@@ -1,24 +1,21 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import "../Styles/Chat.css";
 import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
 import { ArrowLeft } from "lucide-react";
 import { SendHorizontal } from "lucide-react";
+import { File } from "lucide-react";
 import axios from "axios";
 import ReactMarkdown from "react-markdown";
-import { Document, Page } from "react-pdf";
-import FileViewer from "./FileViewer";
+
 import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet"
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable"
+
+import { CircleX } from 'lucide-react';
 
 export const Chat = () => {
   const user = localStorage.getItem("persist:root");
@@ -32,11 +29,15 @@ export const Chat = () => {
   const typingSpeed = 50; // Speed of the typing animation (ms per letter)
   const [displaySubText, setDisplaySubText] = useState(false);
   const [file, setFile] = useState("");
+  const fileViewer = useRef(null); // For file viewer reference
 
   const [fileUrl, setFileUrl] = useState(""); // URL of the file
   const [fileContent, setFileContent] = useState(null); // For text content
   const [fileType, setFileType] = useState(""); // For identifying the file type
   const [fileData, setFileData] = useState({ url: "", type: "" });
+
+  const [fileOpened, setFileOpened] = useState(false); // For file viewer state
+  const [chatMiniMode, setChatMiniMode] = useState(false); // For mini mode state
 
   const parsedUser = JSON.parse(user);
   const userData = parsedUser?.userData
@@ -153,10 +154,24 @@ export const Chat = () => {
         url: response.data.url,
         type: response.data.content_type,
       });
+
+      const chatContainer = document.querySelector(".chat-container");
+      chatContainer.classList.toggle("mini"); // Toggle mini mode for the chat container
+      setChatMiniMode(true); // Toggle mini mode state
     } catch (error) {
       console.error("Error fetching file:", error);
     }
   };
+
+  const handleCloseFileViewer = () => {
+    const chatContainer = document.querySelector(".chat-container");
+    if (chatContainer.classList.contains("mini")) {
+      chatContainer.classList.remove("mini");
+      setChatMiniMode(false);
+    }
+    setFileData({ url: "", type: "" });
+  }
+
 
   const h1Style = {
     color: "gray", // Fill color of the text
@@ -166,119 +181,158 @@ export const Chat = () => {
   };
 
   return (
-    
-    <div className="chat-container">
-      <div className="btn-container">
-        <Button onClick={() => window.history.back()}>
-          <ArrowLeft size={24} /> Back
-        </Button>
-      </div>
-
-      <div className="chat-box-container">
-        {showWelcome && (
-          <div className="welcome-container">
-            <h1
-              className={`welcome-message ${!showWelcome ? "fade-out" : ""}`}
-              style={h1Style}
-            >
-              {welcomeMessage}
-            </h1>
-            {displaySubText && (
-              <p
-                style={{
-                  textAlign: "center",
-                  color: "gray",
-                  fontSize: "17px",
-                  fontStyle: "italic",
-                }}
-              >
-                Please let me know what information you'd like me to retrieve.
-              </p>
-            )}
+    <>
+    <ResizablePanelGroup orientation="horizontal"
+    direction="horizontal"
+    >
+      <div className="main-container">
+        <ResizablePanel>
+        <div className="chat-container">
+          <div className="btn-container">
+            <Button onClick={() => window.history.back()}>
+              <ArrowLeft size={24} /> Back
+            </Button>
           </div>
-        )}
-        {messages.map((message, index) => (
-          <div key={index} className={`chat-message ${message.sender}-message`}>
-            {message.sender === "bot" ? (
-              <div>
-                {/* Render markdown text */}
-                <ReactMarkdown>
-                  {message.text.split("Source File:")[0]}
-                </ReactMarkdown>
 
-                {/* Render the source file outside ReactMarkdown */}
-                {message.text.includes("Source File:") && (
-                  <div className="source-file-link">
-                    <br />
-                    {message.text.split("Source File: ")[1] && (
-                      <Button
-                        href="#"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          handleFileClick(
-                            message.text.split("Source File: ")[1]
-                          );
-                        }}
-                        style={{
-                          cursor: "pointer",
-                          backgroundColor: "darkgray",
-                        }}
-                      >
-                      {message.text.split("Source File: ")[1]}
-                      </Button>
-                    )}
-                  </div>
+          <div className="chat-box-container">
+            {showWelcome && (
+              <div className="welcome-container">
+                <h1
+                  className={`welcome-message ${
+                    !showWelcome ? "fade-out" : ""
+                  }`}
+                  style={h1Style}
+                >
+                  {welcomeMessage}
+                </h1>
+                {displaySubText && (
+                  <p
+                    style={{
+                      textAlign: "center",
+                      color: "gray",
+                      fontSize: "17px",
+                      fontStyle: "italic",
+                    }}
+                  >
+                    Please let me know what information you'd like me to
+                    retrieve.
+                  </p>
                 )}
               </div>
-            ) : (
-              message.text
+            )}
+            {messages.map((message, index) => (
+              <div
+                key={index}
+                className={`chat-message ${message.sender}-message`}
+              >
+                {message.sender === "bot" ? (
+                  <div>
+                    {/* Render markdown text */}
+                    <ReactMarkdown>
+                      {message.text.split("Source File:")[0]}
+                    </ReactMarkdown>
+
+                    {/* Render the source file outside ReactMarkdown */}
+                    {message.text.includes("Source File:") && (
+                      <div className="source-file-link">
+                        <br />
+                        {message.text.split("Source File: ")[1] && (
+                          <>
+                            <Button
+                              href="#"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                handleFileClick(
+                                  message.text.split("Source File: ")[1]
+                                );
+                              }}
+                              style={{
+                                cursor: "pointer",
+                                backgroundColor: "darkgray",
+                              }}
+                            >
+                              <File size={20} />
+                              {message.text.split("Source File: ")[1].split(".")[0]}
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  message.text
+                )}
+              </div>
+            ))}
+
+            {isTyping && (
+              <div className="chat-message bot-message">
+                <ReactMarkdown>{botMessage}</ReactMarkdown>
+              </div>
             )}
           </div>
-        ))}
 
-        {isTyping && (
-          <div className="chat-message bot-message">
-            <ReactMarkdown>{botMessage}</ReactMarkdown>
+          <div className="chat-input-container">
+            <Input
+              type="text"
+              placeholder="Type a message..."
+              value={prompt}
+              onChange={handlePromptChange}
+              style={{
+                borderRadius: "15px",
+                outline: "none",
+                width: "80%",
+              }}
+            />
+            <Button
+              disabled={prompt.trim() === ""}
+              onClick={handleSendMessage}
+              style={{
+                borderRadius: "15px",
+                outline: "none",
+              }}
+            >
+              <SendHorizontal size={20} color="white" /> Send
+            </Button>
           </div>
+        </div>
+        </ResizablePanel>
+        
+        {fileData.url && (
+          <>
+          <ResizableHandle
+          style={{ backgroundColor: "gray",
+           }}
+          ></ResizableHandle>
+          <ResizablePanel>
+          <div className="file-viewer" ref={fileViewer}>
+            { chatMiniMode &&
+            <div className="file-viewer-header">
+            <Button 
+            onClick={handleCloseFileViewer}
+            >
+             <CircleX/> Close
+            </Button>
+            </div>
+        }
+            <div className="file-viewer-content">
+            <iframe
+              src={fileData.url}
+              title="File Preview"
+              width="100%"
+              style={{ border: "none", 
+                height: "100vh",
+                marginLeft: "2px",
+              }}
+            />
+            </div>
+          </div>
+          </ResizablePanel>
+          </>
         )}
       </div>
-
-      <div className="chat-input-container">
-        <Input
-          type="text"
-          placeholder="Type a message..."
-          value={prompt}
-          onChange={handlePromptChange}
-          style={{
-            borderRadius: "15px",
-            outline: "none",
-            width: "80%",
-          }}
-        />
-        <Button
-          disabled={prompt.trim() === ""}
-          onClick={handleSendMessage}
-          style={{
-            borderRadius: "15px",
-            outline: "none",
-          }}
-        >
-          <SendHorizontal size={20} color="white" /> Send
-        </Button>
-      </div>
-
-      {fileData.url && (
-        <div className="file-viewer">
-        <iframe
-          src={fileData.url}
-          title="File Preview"
-          width="100%"
-          height="600px"
-          style={{ border: "none" }}
-        />
-      </div>
-      )}
-    </div>
+      </ResizablePanelGroup>
+    </>
   );
 };
 
