@@ -7,6 +7,18 @@ import { ArrowLeft } from "lucide-react";
 import { SendHorizontal } from "lucide-react";
 import axios from "axios";
 import ReactMarkdown from "react-markdown";
+import { Document, Page } from "react-pdf";
+import FileViewer from "./FileViewer";
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
 
 export const Chat = () => {
   const user = localStorage.getItem("persist:root");
@@ -21,8 +33,10 @@ export const Chat = () => {
   const [displaySubText, setDisplaySubText] = useState(false);
   const [file, setFile] = useState("");
 
-  const [fileUrl, setFileUrl] = useState(null);
-  const [highlightText, setHighlightText] = useState("");
+  const [fileUrl, setFileUrl] = useState(""); // URL of the file
+  const [fileContent, setFileContent] = useState(null); // For text content
+  const [fileType, setFileType] = useState(""); // For identifying the file type
+  const [fileData, setFileData] = useState({ url: "", type: "" });
 
   const parsedUser = JSON.parse(user);
   const userData = parsedUser?.userData
@@ -123,6 +137,27 @@ export const Chat = () => {
     typeLetter();
   };
 
+  const handleFileClick = async (fileName) => {
+    try {
+      const response = await axios.get(
+        `http://localhost:8000/get-file/${fileName}`,
+        {
+          params: {
+            assistant_id: assistantId,
+            user_id: user_id,
+          },
+        }
+      );
+
+      setFileData({
+        url: response.data.url,
+        type: response.data.content_type,
+      });
+    } catch (error) {
+      console.error("Error fetching file:", error);
+    }
+  };
+
   const h1Style = {
     color: "gray", // Fill color of the text
     WebkitTextStroke: "1px black", // Stroke size and color
@@ -131,6 +166,7 @@ export const Chat = () => {
   };
 
   return (
+    
     <div className="chat-container">
       <div className="btn-container">
         <Button onClick={() => window.history.back()}>
@@ -161,30 +197,48 @@ export const Chat = () => {
             )}
           </div>
         )}
-
         {messages.map((message, index) => (
-          <div
-            key={index}
-            className={`chat-message ${
-              message.sender === "user" ? "user-message" : "bot-message"
-            }`}
-          >
+          <div key={index} className={`chat-message ${message.sender}-message`}>
             {message.sender === "bot" ? (
-              <>
-              <ReactMarkdown>{message.text}</ReactMarkdown>
-              {/* <br /> */}
-              {/* <span>File: {file} </span> */}
-              </>
+              <div>
+                {/* Render markdown text */}
+                <ReactMarkdown>
+                  {message.text.split("Source File:")[0]}
+                </ReactMarkdown>
+
+                {/* Render the source file outside ReactMarkdown */}
+                {message.text.includes("Source File:") && (
+                  <div className="source-file-link">
+                    <br />
+                    {message.text.split("Source File: ")[1] && (
+                      <Button
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleFileClick(
+                            message.text.split("Source File: ")[1]
+                          );
+                        }}
+                        style={{
+                          cursor: "pointer",
+                          backgroundColor: "darkgray",
+                        }}
+                      >
+                      {message.text.split("Source File: ")[1]}
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
             ) : (
               message.text
             )}
           </div>
         ))}
+
         {isTyping && (
           <div className="chat-message bot-message">
             <ReactMarkdown>{botMessage}</ReactMarkdown>
-            {/* <br /> */}
-            {/* <span>File: {file} </span> */}
           </div>
         )}
       </div>
@@ -212,6 +266,18 @@ export const Chat = () => {
           <SendHorizontal size={20} color="white" /> Send
         </Button>
       </div>
+
+      {fileData.url && (
+        <div className="file-viewer">
+        <iframe
+          src={fileData.url}
+          title="File Preview"
+          width="100%"
+          height="600px"
+          style={{ border: "none" }}
+        />
+      </div>
+      )}
     </div>
   );
 };

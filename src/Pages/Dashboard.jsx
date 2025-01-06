@@ -77,6 +77,7 @@ export const Dashboard = () => {
   const [validAssistant, setValidAssistant] = useState(false);
   const [hoveredAssistantId, setHoveredAssistantId] = useState(null);
   const [loading, setLoading] = useState(false); // Track loading state
+  const [assistantLoading, setAssistantLoading] = useState(false); // Track assistant loading state
   const [loadingMessage, setLoadingMessage] = useState(""); // Dynamic loading message
   const navigate = useNavigate();
 
@@ -106,10 +107,17 @@ export const Dashboard = () => {
   };
 
   const handleOpenAssistant = (assistantId) => {
+    setAssistantLoading(true);
+    setTimeout(() => {
+      setAssistantLoading(false);
+    }, 5000);
+
     navigate(`/chat/${assistantId}`); // Navigates to /chat/{assistantId}
+
   };
 
   const handleCreateAssistant = async () => {
+    setLoading(true);
     const assistantId = uuidv4(); // Generate a unique ID for the assistant
     const newAssistant = {
       id: assistantId,
@@ -158,6 +166,9 @@ export const Dashboard = () => {
         error.response?.data?.detail ||
           "Failed to create assistant. Please try again."
       );
+    }
+    finally {
+      setLoading(false);
     }
   };
 
@@ -298,6 +309,13 @@ export const Dashboard = () => {
                         Open
                       </Button>
                     </TableCell>
+                    {
+                      assistantLoading ? (
+                        <TableCell>
+                          <span className="spinner" style={{ borderTopColor: "black" }} />
+                        </TableCell>
+                      ): null
+                    }
                   </>
                 ) : (
                   <TableCell></TableCell>
@@ -489,7 +507,11 @@ export const Dashboard = () => {
                 disabled={!validAssistant}
                 onClick={handleCreateAssistant}
               >
-                Create
+                 {loading ? (
+                <span className="spinner" style={{ borderTopColor: "white" }} />
+              ) : (
+                "Create"
+              )}
               </Button>
             </CardFooter>
           </Card>
