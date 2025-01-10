@@ -124,12 +124,22 @@
 
   .file-viewer-header{
     display: flex;
-    justify-content: end;
-    margin-top: 0.5rem;
-    margin-left: 1 rem;
-    margin-right: 1rem;
-    margin-bottom: 0.5rem;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background-color: #e4e4e7;
   }
+
+  .dots {
+    animation: blink 1s infinite step-start;
+  }
+  
+  @keyframes blink {
+    50% {
+      opacity: 0;
+    }
+  }
+  
 
   
 

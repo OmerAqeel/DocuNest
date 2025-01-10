@@ -303,8 +303,24 @@ export const Dashboard = () => {
                     <TableCell className="open-btn-cell">
                       <Button
                         variant="outline"
-                        style={{ borderRadius: "10px", width: "100px" }}
+                        style={{
+                          borderRadius: "10px",
+                          width: "100px",
+                          backgroundColor: "#4ade80",
+                          color: "white",
+                        }}
                         onClick={() => handleOpenAssistant(assistant.id)}
+                        onMouseEnter={(e) => {
+                          e.target.style.backgroundColor = "white";
+                          e.target.style.color = "#4ade80";
+                          e.target.style.borderColor = "#4ade80";
+                        }}
+                        onMouseLeave={(e) => {
+                          
+                          e.target.style.backgroundColor = "#4ade80";
+                          e.target.style.color = "white";
+                          e.target.style.borderColor = "#4ade80";
+                        }}
                       >
                         Open
                       </Button>
@@ -321,8 +337,6 @@ export const Dashboard = () => {
                 ) : (
                   <TableCell></TableCell>
                 )}
-                <TableCell></TableCell>
-                <TableCell></TableCell>
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -331,11 +345,7 @@ export const Dashboard = () => {
                         size="icon"
                         style={{ borderRadius: "50%" }}
                       >
-                        <Ellipsis
-                          style={{
-                            marginLeft: "6vw",
-                          }}
-                        />
+                        <Ellipsis />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent
@@ -384,6 +394,10 @@ export const Dashboard = () => {
                                     assistant.name
                                   )
                                 }
+                                style={{
+                                  backgroundColor: "red",
+                                  color: "white",
+                                }}
                               >
                                 Delete
                               </AlertDialogAction>
