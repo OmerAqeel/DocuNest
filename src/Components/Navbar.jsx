@@ -1,4 +1,5 @@
 import {React, useEffect, useState} from "react";
+import axios from "axios";
 import { VscHubot } from "react-icons/vsc";
 import "../Styles/Navbar.css";
 import { Link, useLocation } from "react-router-dom";
@@ -30,6 +31,7 @@ export const Navbar = () => {
   const location = useLocation();
   const [textEntered, setTextEntered] = useState("");
   const [isValid, setIsValid] = useState(false);
+
 
   const handleEmailChange = (e) => {
     setTextEntered(e.target.value);
@@ -64,6 +66,9 @@ export const Navbar = () => {
 
 
   const userData = useSelector((state) => state.user.userData);
+
+  const userName = JSONparsedUser?.Name;
+  const userEmail = JSONparsedUser?.email;
 
   return (
     <div className="header-container">
@@ -133,6 +138,7 @@ export const Navbar = () => {
                     marginTop: "10px",
                     marginBottom: "10px",
                     backgroundColor: "#0284c7",
+                    fontWeight: "bold",
                   }}
                   disabled={!isValid}
                 >
