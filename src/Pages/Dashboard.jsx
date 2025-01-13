@@ -56,14 +56,18 @@ import { Ellipsis } from "lucide-react";
 import { Trash } from "lucide-react";
 import { Upload } from "lucide-react";
 import { Pencil } from "lucide-react";
+import { User } from 'lucide-react';
+import { ChevronDown } from "lucide-react";
 import { FaRegFilePdf } from "react-icons/fa6";
 import { TbFileTypeDocx } from "react-icons/tb";
 import { IoCheckmarkDone } from "react-icons/io5";
+import { MdGroups2 } from "react-icons/md";
 import { useSelector } from "react-redux";
 import { useDispatch } from "react-redux";
 import { setUserData } from "../store/userSlice";
 import { toast, Toaster } from "sonner";
 import { use } from "react";
+import Workspaces from "./Workspaces";
 
 export const Dashboard = () => {
   const dispatch = useDispatch();
@@ -79,6 +83,9 @@ export const Dashboard = () => {
   const [loading, setLoading] = useState(false); // Track loading state
   const [assistantLoading, setAssistantLoading] = useState(false); // Track assistant loading state
   const [loadingMessage, setLoadingMessage] = useState(""); // Dynamic loading message
+  const [createBtnClicked, setCreateBtnClicked] = useState(false);
+  const [users, setUsers] = useState([]);
+  const [selectedUsers, setSelectedUsers] = useState([]);
   const navigate = useNavigate();
 
   let assistants = user.assistants;
@@ -203,6 +210,10 @@ export const Dashboard = () => {
     }
   };
 
+  const handleCreateBtnClick = () => {
+    setCreateBtnClicked(!createBtnClicked);
+  };
+
   const handleFileUploadToS3 = async (assistantId) => {
     const formData = new FormData();
 
@@ -234,6 +245,9 @@ export const Dashboard = () => {
     }
   };
 
+  // const handleSearchChange = (e) => {
+
+
   const formatDate = (isoDate) => {
     const date = new Date(isoDate);
     return date.toLocaleDateString("en-GB", {
@@ -255,8 +269,192 @@ export const Dashboard = () => {
     }
   }, [assistantName, assistantDescription, filesArray]);
 
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await axios.get(
+          "http://localhost:8000/get-all-users",
+          {
+            headers: {
+              Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+            },
+          }
+        );
+        setUsers(response.data);
+      } catch (error) {
+        console.error("Error fetching users:", error);
+        toast.error("Failed to fetch users");
+      }
+    };
+
+    fetchUsers();
+  }, []);
+
   return (
     <>
+      <br />
+      <br />
+      {/* <div className="workspaces-container">
+        <div className="workspaces-header-container">
+          <h1 className="table-title">Your workspaces</h1>
+          <Button
+            className="button"
+            style={{
+              borderRadius: "10px",
+              width: "100px",
+              backgroundColor: "#38bdf8",
+            }}
+            onClick={handleCreateBtnClick}
+          >
+            Create
+            <MdGroups2 size={20} style={{ marginLeft: "2px" }} />
+          </Button>
+          {createBtnClicked && (
+            <>
+              <div className="modal-overlay">
+                <Card className="modal-card">
+                  <div className="modal-close-btn">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleCreateBtnClick}
+                    >
+                      ✕
+                    </Button>
+                  </div>
+                  <CardHeader>
+                    <CardTitle>New Workspace</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="modal-content">
+                      <div>
+                        <div className="labels-container">
+                          <Label>Workspace Name</Label>
+                        </div>
+                        <Input
+                          type="text"
+                          placeholder="Enter workspace name"
+                          className="mt-2"
+                        />
+                      </div>
+                      <div>
+                        <div className="labels-container">
+                          <Label>Description</Label>
+                        </div>
+                        <Textarea
+                          placeholder="Enter workspace description"
+                          className="mt-2"
+                          style={{ resize: "none" }}
+                        />
+                      </div>
+                      <div className="users-dropdown-container">
+                        <Label>Add Users</Label>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              className="users-dropdown-btn"
+                              style={{
+                                borderRadius: "10px",
+                                outline: "none",
+                              }}
+                              variant="outline"
+                            >
+                              Select users
+                              <ChevronDown size={20} />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent
+                            style={{
+                              marginLeft: "150px",
+                            }}
+                          >
+                            <DropdownMenuGroup
+                            style={{
+                              width: "300px",
+                            }
+                            }
+                            >
+                                <Input
+                                  type="text"
+                                  placeholder="Search users"
+                                  style={{
+                                    width: "100%",
+                                    borderRadius: "10px",
+                                    outline: "none",
+                                    padding: "10px",
+                                    marginBottom: "10px",
+                                  }}
+
+                                />
+                              {users.map((user) => (
+                                <DropdownMenuItem
+                                  key={user.email}
+                                  onSelect={() => {
+                                    if (
+                                      !selectedUsers.find(
+                                        (u) => u.email === user.email
+                                      )
+                                    ) {
+                                      setSelectedUsers([
+                                        ...selectedUsers,
+                                        user,
+                                      ]);
+                                    }
+                                  }}
+                                >
+                                  <div className="flex items-center">
+                                    <span><User style={
+                                      {
+                                        marginRight: "10px",
+                                      }
+                                    }/></span>
+                                    <span>{user.name}</span>
+                                    <span className="ml-2 text-gray-500">
+                                      ({user.email})
+                                    </span>
+                                  </div>
+                                </DropdownMenuItem>
+                              ))}
+                            </DropdownMenuGroup>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                  </CardContent>
+                  <CardFooter
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Button
+                      className="cancel-btn"
+                      variant="outline"
+                      onClick={handleCreateBtnClick}
+                    >
+                      Cancel
+                    </Button>
+                    <Button className={`create-btn`}>
+                      {loading ? (
+                        <span
+                          className="spinner"
+                          style={{ borderTopColor: "white" }}
+                        />
+                      ) : (
+                        "Create"
+                      )}
+                    </Button>
+                  </CardFooter>
+                </Card>
+              </div>
+            </>
+          )}
+        </div>
+        <div className="workspaces">
+          <Workspaces />
+        </div>
+      </div> */}
       <br />
       <br />
       <Toaster
@@ -316,7 +514,6 @@ export const Dashboard = () => {
                           e.target.style.borderColor = "#4ade80";
                         }}
                         onMouseLeave={(e) => {
-                          
                           e.target.style.backgroundColor = "#4ade80";
                           e.target.style.color = "white";
                           e.target.style.borderColor = "#4ade80";

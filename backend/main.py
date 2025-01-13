@@ -19,6 +19,9 @@ from jose import jwt, JWTError
 from models import User, SignInRequest, DeleteAssistantRequest
 from openai import OpenAI
 import mimetypes
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 app = FastAPI()
 
@@ -58,7 +61,7 @@ dynamodb = boto3.resource('dynamodb',
                         )
 
 # Initialize the table
-table = dynamodb.Table('Users')
+usersTable = dynamodb.Table('Users')
 
 # Initialize password context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -86,7 +89,7 @@ async def signin(request: SignInRequest):
     email = request.email
     password = request.password
 
-    response = table.get_item(Key={"email": email})
+    response = usersTable.get_item(Key={"email": email})
     user = response.get("Item")
     if not user or not pwd_context.verify(password, user["Password"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
@@ -104,7 +107,7 @@ async def signin(request: SignInRequest):
 async def signup(user: User):
     hashed_password = pwd_context.hash(user.password)
     try:
-        table.put_item(
+        usersTable.put_item(
             Item={
                 "user_id": user.user_id,
                 "Name": user.name,
@@ -135,7 +138,7 @@ async def get_user_data(token: str = Depends(oauth2_scheme)):
         raise HTTPException(status_code=401, detail="Invalid token payload")
 
     # Fetch user data from DynamoDB using email
-    response = table.get_item(Key={"email": email})
+    response = usersTable.get_item(Key={"email": email})
     user_data = response.get("Item")
     if not user_data:
         raise HTTPException(status_code=404, detail="User not found")
@@ -157,7 +160,7 @@ async def create_assistant(assistant: dict, token: str = Depends(oauth2_scheme))
         raise HTTPException(status_code=401, detail="Invalid token payload")
 
     # Fetch user data from DynamoDB
-    response = table.get_item(Key={"email": email})
+    response = usersTable.get_item(Key={"email": email})
     user_data = response.get("Item")
     if not user_data:
         raise HTTPException(status_code=404, detail="User not found")
@@ -168,7 +171,7 @@ async def create_assistant(assistant: dict, token: str = Depends(oauth2_scheme))
     user_data["assistants"].append(assistant)
 
     # Update DynamoDB with the new assistant
-    table.put_item(Item=user_data)
+    usersTable.put_item(Item=user_data)
 
     return user_data
 
@@ -193,7 +196,7 @@ async def delete_assistant(
     assistant_id = request.assistant_id
 
     # Fetch user data
-    response = table.get_item(Key={"email": email})
+    response = usersTable.get_item(Key={"email": email})
     user_data = response.get("Item")
     if not user_data:
         raise HTTPException(status_code=404, detail="User not found")
@@ -203,7 +206,7 @@ async def delete_assistant(
     user_data["assistants"] = [a for a in assistants if a["id"] != assistant_id]
 
     # Update DynamoDB
-    table.put_item(Item=user_data)
+    usersTable.put_item(Item=user_data)
 
     # Delete S3 folder associated with the assistant
     folder_prefix = f"{user_data['user_id']}/{assistant_id}/"
@@ -217,7 +220,31 @@ async def delete_assistant(
     return {"message": "Assistant deleted successfully", "assistants": user_data["assistants"]}
 
 
-
+@app.get("/get-all-users")
+async def get_all_users():
+    try:
+        # Scan the Users table to get all users
+        response = usersTable.scan(
+            ProjectionExpression="email, #n",
+            ExpressionAttributeNames={
+                '#n': 'Name'  # 'Name' is a reserved word in DynamoDB
+            }
+        )
+        
+        users = response.get('Items', [])
+        
+        # Format the response to include just email and name
+        formatted_users = [
+            {
+                "email": user["email"],
+                "name": user["Name"]
+            }
+            for user in users
+        ]
+        
+        return formatted_users
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch users: {str(e)}")
 
 
 @app.post("/upload/")
