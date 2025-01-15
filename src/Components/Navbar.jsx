@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Settings } from "lucide-react";
 import { UserPen } from "lucide-react";
 import { LogOut } from "lucide-react";
+import { IoMdNotificationsOutline } from "react-icons/io";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -147,6 +148,25 @@ export const Navbar = () => {
               </DropdownMenuGroup>
             </DropdownMenuContent>
           </DropdownMenu>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                className="notification-btn"
+                style={{
+                  borderRadius: "15px",
+                  outline: "none",
+                }}
+                variant="ghost"
+              >
+                <IoMdNotificationsOutline style={
+                  {
+                    height: "22px",
+                    width: "22px",
+                  }
+                } />
+              </Button>
+            </DropdownMenuTrigger>
+            </DropdownMenu>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button

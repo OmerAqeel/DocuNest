@@ -49,7 +49,7 @@ export const Chat = () => {
 
   useEffect(() => {
     // Simulate typing animation for the welcome message
-    simulateWelcomeMessage(`Welcome ${userName}`);
+    simulateWelcomeMessage(`What can I help you with, ${userName} ?`);
   }, [userName]);
 
   const simulateWelcomeMessage = (message) => {

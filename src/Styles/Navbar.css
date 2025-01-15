@@ -18,7 +18,7 @@
   .dashboard-actions {
     display: flex;
     align-items: center;
-    gap: 1rem; /* Adds spacing between the buttons */
+    gap: 0.5rem; /* Adds spacing between the buttons */
   }
   
   .contact-btn {
