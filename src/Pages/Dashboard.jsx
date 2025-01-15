@@ -56,7 +56,7 @@ import { Ellipsis } from "lucide-react";
 import { Trash } from "lucide-react";
 import { Upload } from "lucide-react";
 import { Pencil } from "lucide-react";
-import { User } from 'lucide-react';
+import { User } from "lucide-react";
 import { ChevronDown } from "lucide-react";
 import { FaRegFilePdf } from "react-icons/fa6";
 import { TbFileTypeDocx } from "react-icons/tb";
@@ -68,6 +68,20 @@ import { setUserData } from "../store/userSlice";
 import { toast, Toaster } from "sonner";
 import { use } from "react";
 import Workspaces from "./Workspaces";
+import { Check, ChevronsUpDown } from "lucide-react";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 export const Dashboard = () => {
   const dispatch = useDispatch();
@@ -87,6 +101,9 @@ export const Dashboard = () => {
   const [users, setUsers] = useState([]);
   const [selectedUsers, setSelectedUsers] = useState([]);
   const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const [userInDropDown, setUserInDropDown] = useState([]);
+  const [value, setValue] = useState("")
 
   let assistants = user.assistants;
 
@@ -247,7 +264,6 @@ export const Dashboard = () => {
 
   // const handleSearchChange = (e) => {
 
-
   const formatDate = (isoDate) => {
     const date = new Date(isoDate);
     return date.toLocaleDateString("en-GB", {
@@ -280,6 +296,13 @@ export const Dashboard = () => {
             },
           }
         );
+
+        const users = response.data.map((user) => ({
+          value: user.email,
+          label: user.name,
+        }));
+
+        setUserInDropDown(users);
         setUsers(response.data);
       } catch (error) {
         console.error("Error fetching users:", error);
@@ -294,7 +317,7 @@ export const Dashboard = () => {
     <>
       <br />
       <br />
-      {/* <div className="workspaces-container">
+      <div className="workspaces-container">
         <div className="workspaces-header-container">
           <h1 className="table-title">Your workspaces</h1>
           <Button
@@ -349,75 +372,62 @@ export const Dashboard = () => {
                       </div>
                       <div className="users-dropdown-container">
                         <Label>Add Users</Label>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
+                        <Popover open={open} onOpenChange={setOpen}>
+                          <PopoverTrigger asChild>
                             <Button
-                              className="users-dropdown-btn"
-                              style={{
-                                borderRadius: "10px",
-                                outline: "none",
-                              }}
                               variant="outline"
+                              role="combobox"
+                              aria-expanded={open}
+                              className="w-[200px] justify-between"
                             >
-                              Select users
-                              <ChevronDown size={20} />
+                              Select Users...
+                              <ChevronsUpDown className="opacity-50" />
                             </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent
-                            style={{
-                              marginLeft: "150px",
-                            }}
-                          >
-                            <DropdownMenuGroup
-                            style={{
-                              width: "300px",
-                            }
-                            }
-                            >
-                                <Input
-                                  type="text"
-                                  placeholder="Search users"
-                                  style={{
-                                    width: "100%",
-                                    borderRadius: "10px",
-                                    outline: "none",
-                                    padding: "10px",
-                                    marginBottom: "10px",
-                                  }}
-
-                                />
-                              {users.map((user) => (
-                                <DropdownMenuItem
-                                  key={user.email}
-                                  onSelect={() => {
-                                    if (
-                                      !selectedUsers.find(
-                                        (u) => u.email === user.email
-                                      )
-                                    ) {
-                                      setSelectedUsers([
-                                        ...selectedUsers,
-                                        user,
-                                      ]);
-                                    }
-                                  }}
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[200px] p-0">
+                            <Command>
+                              <CommandInput placeholder="Search Users..." />
+                              <CommandList>
+                                <CommandEmpty>No Users found.</CommandEmpty>
+                                <CommandGroup
+                                style={{
+                                  maxHeight: "160px",
+                                  width: "100%",
+                                  overflowY: "auto",
+                                }}
                                 >
-                                  <div className="flex items-center">
-                                    <span><User style={
-                                      {
-                                        marginRight: "10px",
-                                      }
-                                    }/></span>
-                                    <span>{user.name}</span>
-                                    <span className="ml-2 text-gray-500">
-                                      ({user.email})
-                                    </span>
-                                  </div>
-                                </DropdownMenuItem>
-                              ))}
-                            </DropdownMenuGroup>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                                  {userInDropDown.map((Users) => (
+                                    <CommandItem
+                                      key={Users.value}
+                                      value={Users.value}
+                                      onSelect={(user) => {
+                                        if (selectedUsers.includes(user)) {
+                                          setSelectedUsers(
+                                            selectedUsers.filter(
+                                              (u) => u !== user
+                                            )
+                                          );
+                                          return;
+                                        }
+                                        setSelectedUsers([...selectedUsers, user]); 
+                                      }}
+                                    >
+                                      {`${Users.label} (${Users.value})`}
+                                      <Check
+                                        className={(
+                                          "ml-auto",
+                                          selectedUsers.includes(Users.value)
+                                            ? "opacity-100"
+                                            : "opacity-0"
+                                        )}
+                                      />
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
                       </div>
                     </div>
                   </CardContent>
@@ -454,7 +464,7 @@ export const Dashboard = () => {
         <div className="workspaces">
           <Workspaces />
         </div>
-      </div> */}
+      </div>
       <br />
       <br />
       <Toaster
