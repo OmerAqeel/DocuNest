@@ -6,6 +6,7 @@ from typing import List
 from file_processing import FileProcessor
 from relevance_scoring import RelevanceScorer
 import boto3
+from boto3.dynamodb.conditions import Key, Attr
 import os
 from io import BytesIO
 import tempfile
@@ -63,26 +64,14 @@ dynamodb = boto3.resource('dynamodb',
 # Initialize the table
 usersTable = dynamodb.Table('Users')
 
+# Initialize the workspace table
+workspaceTable = dynamodb.Table('docunest_workspaces')
+
 # Initialize password context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Initialize the relevance scorer
 scorer = RelevanceScorer()
-
-# To use the OLLAMA API for generating responses from the assistant
-
-# OLLAMA_URL = "http://127.0.0.1:11434/api/generate"
-
-# @app.post("/ask")
-# async def ask_ollama(prompt: str):
-#     data = {
-#         "model": "llama2",
-#         "prompt": prompt,
-#         "stream": False,
-#     }
-#     response = requests.post(OLLAMA_URL, json=data)
-#     return response.json()
-
 
 @app.post("/signin/")
 async def signin(request: SignInRequest):
@@ -175,6 +164,53 @@ async def create_assistant(assistant: dict, token: str = Depends(oauth2_scheme))
 
     return user_data
 
+@app.post("/create-workspace")
+async def create_workspace(
+    workspace: dict,
+    users: List[str]
+):
+    workspace_id = workspace.get("id")
+    workspace_name = workspace.get("name")
+    
+    if not workspace_id or not workspace_name:
+        raise HTTPException(status_code=400, detail="Workspace ID and name are required.")
+
+    try:
+        # Save workspace details in DynamoDB
+        workspaceTable.put_item(
+            Item={
+                "workspace_id": workspace_id,
+                "name": workspace_name,
+                "users": users,
+                "created_at": datetime.now().isoformat()
+            }
+        )
+        
+        # Notify each user
+        for email in users:
+            response = usersTable.get_item(Key={"email": email})
+            user_data = response.get("Item")
+            if not user_data:
+                continue  # Skip if the user doesn't exist
+
+            # Update notifications field
+            if "notifications" not in user_data:
+                user_data["notifications"] = []
+            user_data["notifications"].append(f"You have been added to {workspace_name}")
+
+            if "workspaces" not in user_data:
+                user_data["workspaces"] = []
+            user_data["workspaces"].append(workspace_name)
+
+            # Update the user entry in DynamoDB
+            usersTable.put_item(Item=user_data)
+
+        return {"message": f"Workspace '{workspace_name}' created successfully and users notified."}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error creating workspace: {e}")
+
+
 
 @app.delete("/delete-assistant/")
 async def delete_assistant(
@@ -220,6 +256,26 @@ async def delete_assistant(
     return {"message": "Assistant deleted successfully", "assistants": user_data["assistants"]}
 
 
+@app.get("/get-workspaces")
+async def get_workspaces(email: str):
+    try:
+        # Use #users as a placeholder for the reserved keyword
+        response = workspaceTable.scan(
+            FilterExpression="contains(#users, :email)",
+            ExpressionAttributeNames={
+                '#users': 'users'  # Map the placeholder to the actual attribute name
+            },
+            ExpressionAttributeValues={
+                ':email': email  # Map the placeholder to the actual email value
+            }
+        )
+        workspaces = response.get('Items', [])
+        return {"workspaces": workspaces}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching workspaces: {e}")
+
+
+
 @app.get("/get-all-users")
 async def get_all_users():
     try:
@@ -245,6 +301,35 @@ async def get_all_users():
         return formatted_users
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch users: {str(e)}")
+    
+
+@app.get("/notifications")
+async def get_notifications(token: str = Depends(oauth2_scheme)):
+    """
+    Fetch notifications for the user based on their email.
+    """
+    # Decode the token to get user email
+    secret_key = get_secret_key()
+    try:
+        payload = jwt.decode(token, secret_key, algorithms=["HS256"])
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    email = payload.get("email")
+    if not email:
+        raise HTTPException(status_code=401, detail="Invalid token payload")
+
+    # Fetch user data from DynamoDB using email
+    response = usersTable.get_item(Key={"email": email})
+    user_data = response.get("Item")
+    if not user_data:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Retrieve notifications
+    notifications = user_data.get("notifications", [])
+
+    return {"notifications": notifications}
+
 
 
 @app.post("/upload/")

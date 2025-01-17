@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Settings } from "lucide-react";
 import { UserPen } from "lucide-react";
 import { LogOut } from "lucide-react";
+import { Bell } from 'lucide-react';
 import { IoMdNotificationsOutline } from "react-icons/io";
 import {
   DropdownMenu,
@@ -32,6 +33,9 @@ export const Navbar = () => {
   const location = useLocation();
   const [textEntered, setTextEntered] = useState("");
   const [isValid, setIsValid] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [notificationCount, setNotificationCount] = useState(0);
+  const [notificationRead, setNotificationRead] = useState(false);
 
 
   const handleEmailChange = (e) => {
@@ -62,14 +66,61 @@ export const Navbar = () => {
   // getting the name of the assistant from the local storage using the assistantId
   const assistantData = JSONparsedUser?.assistants;
 
+  const userNotificationsData = JSONparsedUser?.notifications;
+
   const assistantName = assistantData?.find((assistant) => assistant.id === assistantId)?.name;
   console.log(assistantName);
 
 
   const userData = useSelector((state) => state.user.userData);
 
-  const userName = JSONparsedUser?.Name;
-  const userEmail = JSONparsedUser?.email;
+
+ 
+  
+  // Function to fetch notifications
+  const fetchNotifications = async () => {
+    try {
+      // Retrieve token from local storage or Redux
+      const token = sessionStorage.getItem("authToken"); // Adjust key if needed
+  
+      if (!token) {
+        console.error("No token found");
+        return;
+      }
+  
+      // Make API call with token
+      const response = await axios.get("http://localhost:8000/notifications", {
+        headers: {
+          Authorization: `Bearer ${token}`, // Add token to Authorization header
+        },
+      });
+  
+      const { notifications: fetchedNotifications} = response.data;
+  
+      setNotifications(fetchedNotifications);
+      const count = fetchedNotifications.length;
+      setNotificationCount(count);
+      console.log("Notifications fetched:", fetchedNotifications);
+      console.log("Notification count:", count);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+  }
+  , []);
+
+  // clearing the notifications
+  useEffect(() => {
+    if (notificationRead) {
+      setNotifications([]);
+      setNotificationCount(0);
+    }
+  }, [notificationRead]);
+
+  
 
   return (
     <div className="header-container">
@@ -150,22 +201,43 @@ export const Navbar = () => {
           </DropdownMenu>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
-                className="notification-btn"
-                style={{
-                  borderRadius: "15px",
-                  outline: "none",
-                }}
-                variant="ghost"
-              >
-                <IoMdNotificationsOutline style={
-                  {
-                    height: "22px",
-                    width: "22px",
-                  }
-                } />
-              </Button>
+            <button className="notification-btn" style={{ position: "relative" }}
+            >
+              <Bell style={{ height: "22px", width: "22px" }} 
+              onClick={() => setNotificationRead(true)}
+              />
+              {(notificationCount > 0 && notificationRead === false)&& (
+                <span
+                  style={{
+                    position: "absolute",
+                    top: "-5px",
+                    right: "-5px",
+                    backgroundColor: "red",
+                    color: "white",
+                    borderRadius: "50%",
+                    width: "16px",
+                    height: "16px",
+                    fontSize: "12px",
+                    textAlign: "center",
+                    lineHeight: "16px",
+                  }}
+                >
+                  {notificationCount}
+                </span>
+              )}
+            </button>
             </DropdownMenuTrigger>
+            <DropdownMenuContent>
+            {notifications.length > 0 ? (
+              notifications.map((notification, index) => (
+                <div key={index} style={{ padding: "10px", fontSize: "14px" }}>
+                  {notification}
+                </div>
+              ))
+            ) : (
+              <div style={{ padding: "10px", fontSize: "14px" }}>No notifications</div>
+            )}
+          </DropdownMenuContent>
             </DropdownMenu>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
