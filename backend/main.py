@@ -171,6 +171,7 @@ async def create_workspace(
 ):
     workspace_id = workspace.get("id")
     workspace_name = workspace.get("name")
+    workspace_headerColor = workspace.get("headerColor")
     
     if not workspace_id or not workspace_name:
         raise HTTPException(status_code=400, detail="Workspace ID and name are required.")
@@ -182,7 +183,8 @@ async def create_workspace(
                 "workspace_id": workspace_id,
                 "name": workspace_name,
                 "users": users,
-                "created_at": datetime.now().isoformat()
+                "created_at": datetime.now().isoformat(),
+                "headerColor": workspace_headerColor,
             }
         )
         

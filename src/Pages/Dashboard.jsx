@@ -67,7 +67,7 @@ import { useDispatch } from "react-redux";
 import { setUserData } from "../store/userSlice";
 import { toast, Toaster } from "sonner";
 import { use } from "react";
-import Workspaces from "./Workspaces";
+import WorkspacesContainer from "./WorkspacesContainer";
 import { Check, ChevronsUpDown } from "lucide-react";
 import {
   Command,
@@ -108,6 +108,16 @@ export const Dashboard = () => {
   const [selectedUsers, setSelectedUsers] = useState([]);
   const workspaceID = uuidv4();
   const [workspaceCreated, setWorkspaceCreated] = useState(false);
+
+  const listOfColors = [
+    "#a5f3fc", // Light blue
+    "#86efac", // Light green
+    "#fef1ca", // Light yellow
+    "#fca5a5", // Light red
+    "#d9f99d", // Light green
+    "#3b82f6", // Blue
+    "#A5B4FB", // Light purple
+  ];
 
   let assistants = user.assistants;
 
@@ -298,11 +308,14 @@ export const Dashboard = () => {
   
     setLoading(true);
   
+    let col = listOfColors[Math.floor(Math.random() * listOfColors.length)];
+
     const newWorkspace = {
       workspace: {
         id: workspaceID,
         name: workspaceName,
         description: workspaceDescription,
+        headerColor: col,
       },
       users: selectedUsers, 
     };
@@ -527,7 +540,7 @@ export const Dashboard = () => {
           )}
         </div>
         <div className="workspaces">
-          <Workspaces workspacesCreated={workspaceCreated}/>
+          <WorkspacesContainer workspacesCreated={workspaceCreated}/>
         </div>
       </div>
       <br />
@@ -818,6 +831,8 @@ export const Dashboard = () => {
           </Card>
         </div>
       )}
+      <br />
+      <br />
     </>
   );
 };

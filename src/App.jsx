@@ -5,6 +5,7 @@ import { SignIn } from './Pages/SignIn';
 import { Dashboard } from './Pages/Dashboard';
 import { Chat } from './Pages/Chat';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Workspace } from './Pages/Workspace';
 import ProtectedRoute from "./ProtectedRoute";
 
 function App() {
@@ -28,6 +29,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Chat />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/:userName/:workspaceName" // Dynamic route
+            element={
+              <ProtectedRoute>
+                <Workspace />
               </ProtectedRoute>
             }
           />

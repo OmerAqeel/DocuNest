@@ -135,7 +135,7 @@ export const Navbar = () => {
         <Link to="/signup">
           <Button className="signIn-btn">Sign Up</Button>
         </Link>
-      ) : location.pathname === "/dashboard" ? (
+      ) : location.pathname === "/dashboard" || /^\/[^/]+\/[^/]+$/.test(location.pathname) ? (
         <div className="dashboard-actions">
           <DropdownMenu
           style={{
