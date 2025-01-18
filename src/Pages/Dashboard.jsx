@@ -99,11 +99,15 @@ export const Dashboard = () => {
   const [loadingMessage, setLoadingMessage] = useState(""); // Dynamic loading message
   const [createBtnClicked, setCreateBtnClicked] = useState(false);
   const [users, setUsers] = useState([]);
-  const [selectedUsers, setSelectedUsers] = useState([]);
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [userInDropDown, setUserInDropDown] = useState([]);
   const [value, setValue] = useState("")
+  const [workspaceName, setWorkspaceName] = useState("");
+  const [workspaceDescription, setWorkspaceDescription] = useState("");
+  const [selectedUsers, setSelectedUsers] = useState([]);
+  const workspaceID = uuidv4();
+  const [workspaceCreated, setWorkspaceCreated] = useState(false);
 
   let assistants = user.assistants;
 
@@ -285,6 +289,59 @@ export const Dashboard = () => {
     }
   }, [assistantName, assistantDescription, filesArray]);
 
+
+  const handleCreateWorkspace = async () => {
+    if (!workspaceName || !workspaceDescription || selectedUsers.length === 0) {
+      toast.error("Please fill out all fields and select at least one user.");
+      return;
+    }
+  
+    setLoading(true);
+  
+    const newWorkspace = {
+      workspace: {
+        id: workspaceID,
+        name: workspaceName,
+        description: workspaceDescription,
+      },
+      users: selectedUsers, 
+    };
+  
+    try {
+      const response = await axios.post(
+        "http://localhost:8000/create-workspace",
+        newWorkspace,
+        {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+  
+      // Handle success (e.g., update UI, show a toast message)
+      toast.success(`Workspace "${workspaceName}" created successfully!`);
+  
+      // Optionally reset the form
+      setWorkspaceName("");
+      setWorkspaceDescription("");
+      setSelectedUsers([]);
+      setCreateBtnClicked(false);
+      setWorkspaceCreated(true);
+
+      // Optionally update state with new workspace data
+      // Example: dispatch(setWorkspaces(response.data));
+    } catch (error) {
+      console.error("Error creating workspace:", error);
+      toast.error(
+        error.response?.data?.detail ||
+          "Failed to create workspace. Please try again."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };  
+
   useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -315,7 +372,6 @@ export const Dashboard = () => {
 
   return (
     <>
-      <br />
       <br />
       <div className="workspaces-container">
         <div className="workspaces-header-container">
@@ -358,6 +414,7 @@ export const Dashboard = () => {
                           type="text"
                           placeholder="Enter workspace name"
                           className="mt-2"
+                          onChange={(e) => setWorkspaceName(e.target.value)}
                         />
                       </div>
                       <div>
@@ -368,6 +425,7 @@ export const Dashboard = () => {
                           placeholder="Enter workspace description"
                           className="mt-2"
                           style={{ resize: "none" }}
+                          onChange={(e) => setWorkspaceDescription(e.target.value)}
                         />
                       </div>
                       <div className="users-dropdown-container">
@@ -445,7 +503,14 @@ export const Dashboard = () => {
                     >
                       Cancel
                     </Button>
-                    <Button className={`create-btn`}>
+                    <Button className={`create-btn`}
+                      disabled={
+                        !workspaceName ||
+                        !workspaceDescription ||
+                        selectedUsers.length === 0
+                      }
+                      onClick={handleCreateWorkspace}
+                    >
                       {loading ? (
                         <span
                           className="spinner"
@@ -462,7 +527,7 @@ export const Dashboard = () => {
           )}
         </div>
         <div className="workspaces">
-          <Workspaces />
+          <Workspaces workspacesCreated={workspaceCreated}/>
         </div>
       </div>
       <br />

@@ -1,0 +1,21 @@
+/* .workspace-card{
+    width: 20vw;
+    height: 25vh;
+    borderRadius: 20px;
+    boxShadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flexDirection: column;
+    justifyContent: center;
+    alignItems: center;
+    cursor: pointer;
+} */
+
+.workspace-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .workspace-card:hover {
+    transform: scale(1.05); /* Expands and moves upward */
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2); /* Add a more prominent shadow */
+  }
+  
