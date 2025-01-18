@@ -107,6 +107,7 @@ export const Dashboard = () => {
   const [workspaceDescription, setWorkspaceDescription] = useState("");
   const [selectedUsers, setSelectedUsers] = useState([]);
   const workspaceID = uuidv4();
+  const [workspaceCreated, setWorkspaceCreated] = useState(false);
 
   let assistants = user.assistants;
 
@@ -326,7 +327,8 @@ export const Dashboard = () => {
       setWorkspaceDescription("");
       setSelectedUsers([]);
       setCreateBtnClicked(false);
-  
+      setWorkspaceCreated(true);
+
       // Optionally update state with new workspace data
       // Example: dispatch(setWorkspaces(response.data));
     } catch (error) {
@@ -370,7 +372,6 @@ export const Dashboard = () => {
 
   return (
     <>
-      <br />
       <br />
       <div className="workspaces-container">
         <div className="workspaces-header-container">
@@ -526,7 +527,7 @@ export const Dashboard = () => {
           )}
         </div>
         <div className="workspaces">
-          <Workspaces />
+          <Workspaces workspacesCreated={workspaceCreated}/>
         </div>
       </div>
       <br />
