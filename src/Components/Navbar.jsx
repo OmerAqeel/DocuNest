@@ -1,4 +1,4 @@
-import {React, useEffect, useState} from "react";
+import { React, useEffect, useState } from "react";
 import axios from "axios";
 import { VscHubot } from "react-icons/vsc";
 import "../Styles/Navbar.css";
@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Settings } from "lucide-react";
 import { UserPen } from "lucide-react";
 import { LogOut } from "lucide-react";
-import { Bell } from 'lucide-react';
+import { Bell } from "lucide-react";
 import { IoMdNotificationsOutline } from "react-icons/io";
 import {
   DropdownMenu,
@@ -37,7 +37,6 @@ export const Navbar = () => {
   const [notificationCount, setNotificationCount] = useState(0);
   const [notificationRead, setNotificationRead] = useState(false);
 
-
   const handleEmailChange = (e) => {
     setTextEntered(e.target.value);
     setIsValid(true);
@@ -47,7 +46,7 @@ export const Navbar = () => {
     if (textEntered.length === 0) {
       setIsValid(false);
     }
-    if(textEntered.length > 0){
+    if (textEntered.length > 0) {
       setIsValid(true);
     }
   }, [textEntered]);
@@ -56,47 +55,44 @@ export const Navbar = () => {
   const match = location.pathname.match(/\/chat\/([^/]+)/);
   const assistantId = match ? match[1] : null;
 
-
   const user = localStorage.getItem("persist:root");
 
   const parsedUser = JSON.parse(user).userData;
 
   let JSONparsedUser = JSON.parse(parsedUser);
-  
+
   // getting the name of the assistant from the local storage using the assistantId
   const assistantData = JSONparsedUser?.assistants;
 
   const userNotificationsData = JSONparsedUser?.notifications;
 
-  const assistantName = assistantData?.find((assistant) => assistant.id === assistantId)?.name;
+  const assistantName = assistantData?.find(
+    (assistant) => assistant.id === assistantId
+  )?.name;
   console.log(assistantName);
-
 
   const userData = useSelector((state) => state.user.userData);
 
-
- 
-  
   // Function to fetch notifications
   const fetchNotifications = async () => {
     try {
       // Retrieve token from local storage or Redux
       const token = sessionStorage.getItem("authToken"); // Adjust key if needed
-  
+
       if (!token) {
         console.error("No token found");
         return;
       }
-  
+
       // Make API call with token
       const response = await axios.get("http://localhost:8000/notifications", {
         headers: {
           Authorization: `Bearer ${token}`, // Add token to Authorization header
         },
       });
-  
-      const { notifications: fetchedNotifications} = response.data;
-  
+
+      const { notifications: fetchedNotifications } = response.data;
+
       setNotifications(fetchedNotifications);
       const count = fetchedNotifications.length;
       setNotificationCount(count);
@@ -109,8 +105,7 @@ export const Navbar = () => {
 
   useEffect(() => {
     fetchNotifications();
-  }
-  , []);
+  }, []);
 
   // clearing the notifications
   useEffect(() => {
@@ -119,8 +114,6 @@ export const Navbar = () => {
       setNotificationCount(0);
     }
   }, [notificationRead]);
-
-  
 
   return (
     <div className="header-container">
@@ -135,34 +128,34 @@ export const Navbar = () => {
         <Link to="/signup">
           <Button className="signIn-btn">Sign Up</Button>
         </Link>
-      ) : location.pathname === "/dashboard" || /^\/[^/]+\/[^/]+$/.test(location.pathname) ? (
+      ) : location.pathname === "/dashboard" ? ( //|| /^\/[^/]+\/[^/]+$/.test(location.pathname)
         <div className="dashboard-actions">
           <DropdownMenu
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: "6vw",
-          }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "6vw",
+            }}
           >
             <DropdownMenuTrigger asChild>
-          <Button className="contact-btn" variant="outline">
-            Contact us
-          </Button>
+              <Button className="contact-btn" variant="outline">
+                Contact us
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-            <DropdownMenuLabel
-             style={{
-              color: "gray",
-              fontSize: "12px",
-              fontWeight: "bold",
-              marginTop: "10px",
-            }}
-            >
-              Please write your query below:
-            </DropdownMenuLabel>
+              <DropdownMenuLabel
+                style={{
+                  color: "gray",
+                  fontSize: "12px",
+                  fontWeight: "bold",
+                  marginTop: "10px",
+                }}
+              >
+                Please write your query below:
+              </DropdownMenuLabel>
               <DropdownMenuGroup>
-                  <Textarea
+                <Textarea
                   style={{
                     marginRight: "10px",
                     marginLeft: "10px",
@@ -177,8 +170,7 @@ export const Navbar = () => {
                   placeholder="Type here"
                   value={textEntered}
                   onChange={handleEmailChange}
-                  >
-                  </Textarea>
+                ></Textarea>
 
                 <Button
                   style={{
@@ -201,44 +193,52 @@ export const Navbar = () => {
           </DropdownMenu>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-            <button className="notification-btn" style={{ position: "relative" }}
-            >
-              <Bell style={{ height: "22px", width: "22px" }} 
-              onClick={() => setNotificationRead(true)}
-              />
-              {(notificationCount > 0 && notificationRead === false)&& (
-                <span
-                  style={{
-                    position: "absolute",
-                    top: "-5px",
-                    right: "-5px",
-                    backgroundColor: "red",
-                    color: "white",
-                    borderRadius: "50%",
-                    width: "16px",
-                    height: "16px",
-                    fontSize: "12px",
-                    textAlign: "center",
-                    lineHeight: "16px",
-                  }}
-                >
-                  {notificationCount}
-                </span>
-              )}
-            </button>
+              <button
+                className="notification-btn"
+                style={{ position: "relative" }}
+              >
+                <Bell
+                  style={{ height: "22px", width: "22px" }}
+                  onClick={() => setNotificationRead(true)}
+                />
+                {notificationCount > 0 && notificationRead === false && (
+                  <span
+                    style={{
+                      position: "absolute",
+                      top: "-5px",
+                      right: "-5px",
+                      backgroundColor: "red",
+                      color: "white",
+                      borderRadius: "50%",
+                      width: "16px",
+                      height: "16px",
+                      fontSize: "12px",
+                      textAlign: "center",
+                      lineHeight: "16px",
+                    }}
+                  >
+                    {notificationCount}
+                  </span>
+                )}
+              </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-            {notifications.length > 0 ? (
-              notifications.map((notification, index) => (
-                <div key={index} style={{ padding: "10px", fontSize: "14px" }}>
-                  {notification}
+              {notifications.length > 0 ? (
+                notifications.map((notification, index) => (
+                  <div
+                    key={index}
+                    style={{ padding: "10px", fontSize: "14px" }}
+                  >
+                    {notification}
+                  </div>
+                ))
+              ) : (
+                <div style={{ padding: "10px", fontSize: "14px" }}>
+                  No notifications
                 </div>
-              ))
-            ) : (
-              <div style={{ padding: "10px", fontSize: "14px" }}>No notifications</div>
-            )}
-          </DropdownMenuContent>
-            </DropdownMenu>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -284,17 +284,19 @@ export const Navbar = () => {
                 }
               : { display: "none" }
           }
+        >
+          <h1
+            className="assistant-name"
+            style={{
+              fontSize: "20px", // Font size
+              fontWeight: "bold",
+              fontStyle: "italic",
+            }}
           >
-          <h1 className="assistant-name"
-          style={{
-            fontSize: '20px', // Font size
-            fontWeight: 'bold',
-            fontStyle: 'italic',
-          }}
-          >{assistantName}</h1>
+            {assistantName}
+          </h1>
         </div>
-      )
-        : null }
+      ) : null}
     </div>
   );
 };

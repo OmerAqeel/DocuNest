@@ -17,7 +17,7 @@ from passlib.context import CryptContext
 from datetime import datetime, timedelta
 from jwtAuthentication import create_access_token, get_secret_key
 from jose import jwt, JWTError
-from models import User, SignInRequest, DeleteAssistantRequest
+from models import User, SignInRequest, DeleteAssistantRequest, ConversationRequest
 from openai import OpenAI
 import mimetypes
 import smtplib
@@ -66,6 +66,9 @@ usersTable = dynamodb.Table('Users')
 
 # Initialize the workspace table
 workspaceTable = dynamodb.Table('docunest_workspaces')
+
+# Initialize the conversations table
+conversationsTable = dynamodb.Table('conversations')
 
 # Initialize password context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -436,6 +439,39 @@ async def get_file(file_name: str, assistant_id: str, user_id: str):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching file: {e}")
+    
+
+@app.post("/save-conversation")
+async def save_conversation(request: ConversationRequest):
+    try:
+        conversation_title = ""
+
+        completion = client.chat.completions.create(
+        model="gpt-4o",
+        max_tokens=120,
+        messages=
+        [
+           {"role": "system", "content": "You are an expert assistant designed to provide clear, concise, and well-structured responses to queries. Your responses must be accurate, specific, and directly address the query without unnecessary explanations or comments."},
+           {"role": "user", "content": f"I need you to generate a 3-5 words of title for the conversation. Here are the messages: {request.messages}, make sure your response only containes 3-4 words and that is the title nothing else, you don't need to include any other information or explain anything. Just provide the title."}  
+        ]
+        )
+
+        conversation_title = completion.choices[0].message.content
+        
+        # Save the conversation in DynamoDB
+        conversationsTable.put_item(
+            Item={
+                "conversationID": request.conversation_id,
+                "title": conversation_title,
+                "assistant_id": request.assistant_id,
+                "user_id": request.user_id,
+                "messages": request.messages,
+                "timestamp": datetime.now().isoformat()
+            }
+        )
+        return {"message": "Conversation saved successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error saving conversation: {e}")
 
 
 

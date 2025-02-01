@@ -11,6 +11,7 @@
     width: 100vw;
     height: 95vh;
     transition: width 0.8s ease;
+    transition: margin 0.5s ease;
   }
 
 .chat-container.mini {
@@ -31,9 +32,11 @@
 
   .btn-container{
     display: flex;
-    justify-content: left;
+    justify-content: space-between;
+    align-items: center;
     margin-top: 0.5rem;
     margin-left: 0.5rem;
+    margin-right: 0.5rem;
   }
 
   .chat-box-container {
@@ -139,6 +142,21 @@
       opacity: 0;
     }
   }
+
+  .sidebar {
+    background-color: #373c44;
+    width: 20vw;
+    height: 100vh;
+    position: fixed;
+    left: 0;
+    transform: translateX(-100%);
+    transition: transform 0.4s ease-in-out;
+  }
+  
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  
   
 
   

@@ -8,6 +8,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Workspace } from './Pages/Workspace';
 import ProtectedRoute from "./ProtectedRoute";
 
+
 function App() {
   return (
     <Router>
@@ -25,7 +26,7 @@ function App() {
             } 
           />
           <Route
-            path="/chat/:assistantId" // Dynamic route
+            path="/chat/:assistantId/:conversationID" // Dynamic route
             element={
               <ProtectedRoute>
                 <Chat />

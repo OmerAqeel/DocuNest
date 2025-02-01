@@ -1,4 +1,5 @@
 from pydantic import BaseModel, EmailStr
+from typing import List
 
 
 # Model for Sign-Up requests
@@ -17,3 +18,9 @@ class SignInRequest(BaseModel):
 # Model for Assistant requests (Create, Update, Delete)
 class DeleteAssistantRequest(BaseModel):
     assistant_id: str
+
+class ConversationRequest(BaseModel):
+    user_id: str
+    conversation_id: str
+    assistant_id: str
+    messages: List[dict]

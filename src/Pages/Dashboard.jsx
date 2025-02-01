@@ -146,11 +146,12 @@ export const Dashboard = () => {
 
   const handleOpenAssistant = (assistantId) => {
     setAssistantLoading(true);
+    let conversationID = uuidv4();
     setTimeout(() => {
       setAssistantLoading(false);
     }, 5000);
 
-    navigate(`/chat/${assistantId}`); // Navigates to /chat/{assistantId}
+    navigate(`/chat/${assistantId}/${conversationID}`); // Navigates to /chat/{assistantId}/{conversationID}
   };
 
   const handleCreateAssistant = async () => {
