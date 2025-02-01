@@ -5,7 +5,9 @@ import { SignIn } from './Pages/SignIn';
 import { Dashboard } from './Pages/Dashboard';
 import { Chat } from './Pages/Chat';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Workspace } from './Pages/Workspace';
 import ProtectedRoute from "./ProtectedRoute";
+
 
 function App() {
   return (
@@ -24,10 +26,18 @@ function App() {
             } 
           />
           <Route
-            path="/chat/:assistantId" // Dynamic route
+            path="/chat/:assistantId/:conversationID" // Dynamic route
             element={
               <ProtectedRoute>
                 <Chat />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/:userName/:workspaceName" // Dynamic route
+            element={
+              <ProtectedRoute>
+                <Workspace />
               </ProtectedRoute>
             }
           />

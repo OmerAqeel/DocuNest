@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import {
   Card,
@@ -9,9 +10,10 @@ import {
 } from "@/components/ui/card";
 import '../Styles/Workspaces.css';
 
-export const Workspaces = (workspacesCreated) => {
+export const WorkspacesContainer = (workspacesCreated) => {
   const [workspacesList, setWorkspacesList] = useState([]);
   const [workspaceColors, setWorkspaceColors] = useState({});
+  const navigate = useNavigate();
 
   const listOfColors = [
     "#a5f3fc", // Light blue
@@ -27,6 +29,7 @@ export const Workspaces = (workspacesCreated) => {
   const parsedUser = JSON.parse(user).userData;
   let JSONparsedUser = JSON.parse(parsedUser);
   const userEmail = JSONparsedUser?.email;
+  const userName = JSONparsedUser?.Name;
 
 
 useEffect(() => {
@@ -41,9 +44,10 @@ useEffect(() => {
         },
       });
 
-      const workspaceNames = response.data.workspaces.map(
-        (workspace) => workspace.name
-      );
+      const workspaceNames = response.data.workspaces.map((workspace) => ({
+        workspaceName: workspace.name,
+        headerColor: workspace.headerColor,
+      }));
       setWorkspacesList(workspaceNames);
 
       const savedColors = JSON.parse(localStorage.getItem("workspaceColors")) || {};
@@ -93,7 +97,7 @@ useEffect(() => {
           >
             {workspacesList.map((workspace) => (
               <Card
-                key={workspace}
+                key={workspace.workspaceName}
                 className="workspace-card"
                 style={{
                   width: "20vw",
@@ -107,11 +111,12 @@ useEffect(() => {
                   cursor: "pointer",
                   gap: "1rem",
                 }}
+                onClick={() => navigate(`/${userName}/${workspace.workspaceName}`)}
               >
                 <CardHeader
                   id="workspace-card-header"
                   style={{
-                    backgroundColor: workspaceColors[workspace] || "#ddd",
+                    backgroundColor: workspace.headerColor || "#ddd",
                     color: "white",
                     width: "9vw",
                     height: "9vw",
@@ -121,25 +126,23 @@ useEffect(() => {
                   }}
                 >
                   <CardTitle style={{ fontSize: "2rem", marginTop: "1.5rem" }}>
-                    {
-                      workspace.split(" ")[0].charAt(0).toUpperCase() +
-                      (workspace.split(" ")[1]
-                        ? workspace.split(" ")[1].charAt(0).toUpperCase()
-                        : "")
-                    }
+                    {workspace.workspaceName.split(" ")[0].charAt(0).toUpperCase() +
+                      (workspace.workspaceName.split(" ")[1]
+                        ? workspace.workspaceName.split(" ")[1].charAt(0).toUpperCase()
+                        : "")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <CardDescription>
                     <h1
                       style={{
-                        fontWeight: "semi-bold",
                         fontFamily: "sans-serif",
                         textAlign: "center",
-                        color: "black",
+                        color: "gray",
+                        fontSize: "1rem",
                       }}
                     >
-                      {workspace}
+                      {workspace.workspaceName}
                     </h1>
                   </CardDescription>
                 </CardContent>
@@ -152,4 +155,4 @@ useEffect(() => {
   );
 };
 
-export default Workspaces;
+export default WorkspacesContainer;
