@@ -443,35 +443,51 @@ async def get_file(file_name: str, assistant_id: str, user_id: str):
 
 @app.post("/save-conversation")
 async def save_conversation(request: ConversationRequest):
+
+    if(request.messages != None or len(request.messages) != 0):
+        try:
+            conversation_title = ""
+
+            completion = client.chat.completions.create(
+            model="gpt-4o",
+            max_tokens=120,
+            messages=
+            [
+            {"role": "system", "content": "You are an expert assistant designed to provide clear, concise, and well-structured responses to queries. Your responses must be accurate, specific, and directly address the query without unnecessary explanations or comments."},
+            {"role": "user", "content": f"I need you to generate a 3-5 words of title for the conversation. Here are the messages: {request.messages}, make sure your response only containes 3-4 words and that is the title nothing else, you don't need to include any other information or explain anything. Just provide the title."}  
+            ]
+            )
+
+            conversation_title = completion.choices[0].message.content
+            
+            # Save the conversation in DynamoDB
+            conversationsTable.put_item(
+                Item={
+                    "conversationID": request.conversation_id,
+                    "title": conversation_title,
+                    "assistant_id": request.assistant_id,
+                    "user_id": request.user_id,
+                    "messages": request.messages,
+                    "timestamp": datetime.now().isoformat()
+                }
+            )
+            return {"message": "Conversation saved successfully"}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error saving conversation: {e}")
+    else:
+        raise HTTPException(status_code=400, detail="Messages are required to save a conversation.")
+    
+
+@app.get("/get-conversations")
+async def get_conversations(user_id: str, assistant_id: str):
     try:
-        conversation_title = ""
-
-        completion = client.chat.completions.create(
-        model="gpt-4o",
-        max_tokens=120,
-        messages=
-        [
-           {"role": "system", "content": "You are an expert assistant designed to provide clear, concise, and well-structured responses to queries. Your responses must be accurate, specific, and directly address the query without unnecessary explanations or comments."},
-           {"role": "user", "content": f"I need you to generate a 3-5 words of title for the conversation. Here are the messages: {request.messages}, make sure your response only containes 3-4 words and that is the title nothing else, you don't need to include any other information or explain anything. Just provide the title."}  
-        ]
+        response = conversationsTable.scan(
+            FilterExpression=Attr("user_id").eq(user_id) & Attr("assistant_id").eq(assistant_id)
         )
-
-        conversation_title = completion.choices[0].message.content
-        
-        # Save the conversation in DynamoDB
-        conversationsTable.put_item(
-            Item={
-                "conversationID": request.conversation_id,
-                "title": conversation_title,
-                "assistant_id": request.assistant_id,
-                "user_id": request.user_id,
-                "messages": request.messages,
-                "timestamp": datetime.now().isoformat()
-            }
-        )
-        return {"message": "Conversation saved successfully"}
+        conversations = response.get("Items", [])
+        return {"conversations": conversations}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error saving conversation: {e}")
+        raise HTTPException(status_code=500, detail=f"Error fetching conversations: {e}")
 
 
 
