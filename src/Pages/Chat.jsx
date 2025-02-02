@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
 import { useParams } from "react-router-dom";
 import "../Styles/Chat.css";
@@ -22,9 +23,11 @@ import {
 } from "@/components/ui/tooltip";
 import { PanelRight } from "lucide-react";
 import { CircleX } from "lucide-react";
+import { TbLayoutSidebar } from "react-icons/tb";
 
 export const Chat = () => {
   const user = localStorage.getItem("persist:root");
+  const navigate = useNavigate();
   const [messages, setMessages] = useState([]); // Store chat messages
   const [prompt, setPrompt] = useState("");
   const [welcomeMessage, setWelcomeMessage] = useState(""); // Welcome message state
@@ -79,11 +82,12 @@ export const Chat = () => {
   };
 
   const handleBackBtnClick = async () => {
-    window.history.back();
-  
+    navigate("/dashboard");
+
+    if(messages.length > 0) {
     try {
       await axios.post("http://localhost:8000/save-conversation/", {
-        user_id: user_id,  // ✅ Send directly in the body
+        user_id: user_id, // ✅ Send directly in the body
         conversation_id: conversationID,
         assistant_id: assistantId,
         messages: messages,
@@ -91,8 +95,27 @@ export const Chat = () => {
     } catch (error) {
       console.error("Error saving conversation:", error);
     }
+  }
   };
-  
+
+  const fetchConversations = async () => {
+    try {
+      const response = await axios.get(
+        "http://localhost:8000/get-conversations/",
+        {
+          params: {
+            user_id: user_id,
+            assistant_id: assistantId,
+            conversationID: conversationID,
+          },
+        }
+      );
+      setConversations(response.data.conversations);
+      console.log("Conversations:", response.data.conversations);
+    } catch (error) {
+      console.error("Error fetching conversations:", error);
+    }
+  };
 
   const handleSendMessage = async () => {
     if (prompt.trim() === "") return;
@@ -202,6 +225,11 @@ export const Chat = () => {
     setFileData({ url: "", type: "" });
   };
 
+  const handleSelectConversation = (convId) => {
+    setShowWelcome(false);
+    navigate(`/chat/${assistantId}/${convId}`);
+  };
+
   const h1Style = {
     color: "gray", // Fill color of the text
     WebkitTextStroke: "1px black", // Stroke size and color
@@ -210,24 +238,19 @@ export const Chat = () => {
   };
 
   useEffect(() => {
-
-    const fetchConversations = async()=>{
-      try {
-        const response = await axios.get("http://localhost:8000/get-conversations/", {
-          params: {
-            user_id: user_id,
-            assistant_id: assistantId,
-            conversationID: conversationID,
-          },
-        });
-        setConversations(response.data.conversations);
-      } catch (error) {
-        console.error("Error fetching conversations:", error);
+    if (conversationID) {
+      const currentConversation = conversations.find(
+        (conv) => conv.conversationID === conversationID
+      );
+      if (currentConversation) {
+        setMessages(currentConversation.messages);
       }
     }
+  }, [conversationID, conversations]);
+
+  useEffect(() => {
     fetchConversations();
-  }
-  , []);
+  }, []);
 
   return (
     <>
@@ -236,21 +259,33 @@ export const Chat = () => {
           <div
             className={`main-container ${sideBarOpened ? "sidebar-open" : ""}`}
           >
-              <div 
+            <div
               className={`sidebar ${sideBarOpened ? "open" : ""}`}
-                style={{
-                  backgroundColor: "#373c44",
-                  width: "20vw",
-                  height: "100vh",
-                  position: "absolute",
-                  left: "0",
-                }}
-              ></div>
+              style={{
+                backgroundColor: "#373c44",
+                width: "20vw",
+                height: "100vh",
+                position: "absolute",
+                left: "0",
+              }}
+            >
+              <br />
+              <h3 className="sidebar-title">Conversations</h3>
+              {conversations.map((conv) => (
+                <div
+                  key={conv.conversationID}
+                  className="conversation-item"
+                  onClick={() => handleSelectConversation(conv.conversationID)}
+                >
+                  {conv.title}
+                </div>
+              ))}
+            </div>
             <ResizablePanel>
               <div className="btn-container">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <PanelRight
+                    <TbLayoutSidebar
                       size={25}
                       onClick={handleSideBarOpen}
                       {...(sideBarOpened

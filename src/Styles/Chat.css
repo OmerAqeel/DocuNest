@@ -156,7 +156,36 @@
   .sidebar.open {
     transform: translateX(0);
   }
+
+  .sidebar.open{
+    display: flex;
+    flex-direction: column;
+    color: white;
+    gap: 1rem;
+  }
+
+  .sidebar-title{
+    display: flex;
+    font-weight: bold;
+    justify-content: left;
+    align-items: center;
+    font-size: 1.25rem;
+    padding: 10px;
+    /* background-color: #2c3038; */
+  }
+
+  .conversation-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid #2c3038;
+  }
   
+  .conversation-item:hover {
+    background-color: #2c3038;
+    cursor: pointer;
+  }
   
 
   
