@@ -19,7 +19,7 @@
 };
   
 .chat-welome-title {
-  display: flex;
+    display: flex;
     font-size: 100px;
     color: #333;
   }
@@ -162,6 +162,7 @@
     flex-direction: column;
     color: white;
     gap: 1rem;
+    overflow-y: auto;
   }
 
   .sidebar-title{

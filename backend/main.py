@@ -569,7 +569,7 @@ async def test_relevancy(
 
     completion = client.chat.completions.create(
         model="gpt-4o",
-        max_tokens=120,
+        max_tokens=300,
         messages=[
            {"role": "system", "content": "You are an expert assistant designed to provide clear, concise, and well-structured responses to queries. Your responses must be accurate, specific, and directly address the query without unnecessary explanations or comments."},
            {"role": "user", "content": f"I need you to generate a precise and structured response to the following query: '{query}'. \n\nYou have access to:\n1. **Top Relevant Chunks**: {results}\n\nYour task is to:\n\n- Avoid assumptions or speculative answers. Use only the provided data.\n- Format the output in a **structured and organised manner**.\n\n**Important Notes:**\n- Do **not** include extra comments, explanations and just be stright to the points rather than being verbose\n- Ensure the response is **factually accurate** and **specific** to the query.\n\nNow, generate the response for the given query."}  
