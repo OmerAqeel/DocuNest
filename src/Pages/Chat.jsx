@@ -24,6 +24,7 @@ import {
 import { PanelRight } from "lucide-react";
 import { CircleX } from "lucide-react";
 import { TbLayoutSidebar } from "react-icons/tb";
+import { RiChatNewLine } from "react-icons/ri";
 
 export const Chat = () => {
   const user = localStorage.getItem("persist:root");
@@ -31,18 +32,18 @@ export const Chat = () => {
   const [messages, setMessages] = useState([]); // Store chat messages
   const [prompt, setPrompt] = useState("");
   const [welcomeMessage, setWelcomeMessage] = useState(""); // Welcome message state
-  const [showWelcome, setShowWelcome] = useState(true); // Control welcome visibility
+  const [showWelcome, setShowWelcome] = useState(messages.length === 0 ? true : false); // Control welcome visibility
   const { assistantId, conversationID } = useParams();
   const [isTyping, setIsTyping] = useState(false); // Animation state
   const [isThinking, setIsThinking] = useState(false);
   const [botMessage, setBotMessage] = useState(""); // For bot message streaming
-  const typingSpeed = 50; // Speed of the typing animation (ms per letter)
+  const typingSpeed = 25; // Speed of the typing animation (ms per letter)
   const [displaySubText, setDisplaySubText] = useState(false);
   const [file, setFile] = useState("");
   const fileViewer = useRef(null); // For file viewer reference
   const [fileData, setFileData] = useState({ url: "", type: "" });
   const [chatMiniMode, setChatMiniMode] = useState(false); // For mini mode state
-  const [sideBarOpened, setSideBarOpened] = useState(false);
+  const [sideBarOpened, setSideBarOpened] = useState(true);
   const [conversations, setConversations] = useState([]);
 
   const parsedUser = JSON.parse(user);
@@ -84,18 +85,18 @@ export const Chat = () => {
   const handleBackBtnClick = async () => {
     navigate("/dashboard");
 
-    if(messages.length > 0) {
-    try {
-      await axios.post("http://localhost:8000/save-conversation/", {
-        user_id: user_id, // ✅ Send directly in the body
-        conversation_id: conversationID,
-        assistant_id: assistantId,
-        messages: messages,
-      });
-    } catch (error) {
-      console.error("Error saving conversation:", error);
+    if (messages.length > 0) {
+      try {
+        await axios.post("http://localhost:8000/save-conversation/", {
+          user_id: user_id, // ✅ Send directly in the body
+          conversation_id: conversationID,
+          assistant_id: assistantId,
+          messages: messages,
+        });
+      } catch (error) {
+        console.error("Error saving conversation:", error);
+      }
     }
-  }
   };
 
   const fetchConversations = async () => {
@@ -230,6 +231,15 @@ export const Chat = () => {
     navigate(`/chat/${assistantId}/${convId}`);
   };
 
+  const handleNewChat = async () => {
+    const newConversationID = uuidv4();
+    setShowWelcome(true);
+    setMessages([]);
+    setWelcomeMessage(`What can I help you with, ${userName} ?`);
+    navigate(`/chat/${assistantId}/${newConversationID}`);
+  }
+
+
   const h1Style = {
     color: "gray", // Fill color of the text
     WebkitTextStroke: "1px black", // Stroke size and color
@@ -244,6 +254,7 @@ export const Chat = () => {
       );
       if (currentConversation) {
         setMessages(currentConversation.messages);
+        setWelcomeMessage(false);
       }
     }
   }, [conversationID, conversations]);
@@ -301,6 +312,18 @@ export const Chat = () => {
                   <TooltipContent>
                     <p>Sidebar</p>
                   </TooltipContent>
+                  <RiChatNewLine size={25} 
+                   onClick={handleNewChat}
+                  {...(sideBarOpened
+                    ? { color: "white" }
+                    : { color: "black" })}
+                  style={{
+                    zIndex: "1000",
+                    cursor: "pointer",
+                    position: "absolute",
+                    left: "60px",
+                  }}
+                  />
                   <Button onClick={handleBackBtnClick}>
                     <ArrowLeft size={24} /> Back
                   </Button>
@@ -313,7 +336,7 @@ export const Chat = () => {
                   : { style: { marginLeft: "0" } })}
               >
                 <div className="chat-box-container">
-                  {showWelcome && (
+                  {(showWelcome && messages.length === 0) && (
                     <div className="welcome-container">
                       <h1
                         className={`welcome-message ${

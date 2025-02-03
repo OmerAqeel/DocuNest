@@ -1,4 +1,5 @@
 import { React, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { VscHubot } from "react-icons/vsc";
 import "../Styles/Navbar.css";
@@ -11,26 +12,19 @@ import { Settings } from "lucide-react";
 import { UserPen } from "lucide-react";
 import { LogOut } from "lucide-react";
 import { Bell } from "lucide-react";
-import { IoMdNotificationsOutline } from "react-icons/io";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuPortal,
-  DropdownMenuSeparator,
-  DropdownMenuShortcut,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useSelector } from "react-redux";
-import { useParams } from "react-router-dom";
 
 export const Navbar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [textEntered, setTextEntered] = useState("");
   const [isValid, setIsValid] = useState(false);
   const [notifications, setNotifications] = useState([]);
@@ -116,8 +110,12 @@ export const Navbar = () => {
   }, [notificationRead]);
 
   return (
-    <div className="header-container">
-      <h1 className="header-title">
+    <div className="header-container"
+        onMouseEnter={(e) => (e.target.style.cursor = "pointer")}
+    >
+      <h1 className="header-title"
+      onClick={() => navigate("/dashboard")}
+      >
         <VscHubot size={35} /> DocuNest
       </h1>
       {location.pathname === "/signup" ? (
@@ -128,7 +126,7 @@ export const Navbar = () => {
         <Link to="/signup">
           <Button className="signIn-btn">Sign Up</Button>
         </Link>
-      ) : location.pathname === "/dashboard" ? ( //|| /^\/[^/]+\/[^/]+$/.test(location.pathname)
+      ) : location.pathname === "/dashboard" || /^\/[^/]+\/[^/]+$/.test(location.pathname) ? ( //
         <div className="dashboard-actions">
           <DropdownMenu
             style={{
