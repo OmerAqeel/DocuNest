@@ -37,7 +37,7 @@ export const Chat = () => {
   const [isTyping, setIsTyping] = useState(false); // Animation state
   const [isThinking, setIsThinking] = useState(false);
   const [botMessage, setBotMessage] = useState(""); // For bot message streaming
-  const typingSpeed = 50; // Speed of the typing animation (ms per letter)
+  const typingSpeed = 25; // Speed of the typing animation (ms per letter)
   const [displaySubText, setDisplaySubText] = useState(false);
   const [file, setFile] = useState("");
   const fileViewer = useRef(null); // For file viewer reference

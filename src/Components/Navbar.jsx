@@ -112,9 +112,10 @@ export const Navbar = () => {
   return (
     <div className="header-container"
         onMouseEnter={(e) => (e.target.style.cursor = "pointer")}
-        onClick={() => navigate("/dashboard")}
     >
-      <h1 className="header-title">
+      <h1 className="header-title"
+      onClick={() => navigate("/dashboard")}
+      >
         <VscHubot size={35} /> DocuNest
       </h1>
       {location.pathname === "/signup" ? (
@@ -125,7 +126,7 @@ export const Navbar = () => {
         <Link to="/signup">
           <Button className="signIn-btn">Sign Up</Button>
         </Link>
-      ) : location.pathname === "/dashboard" ? ( //|| /^\/[^/]+\/[^/]+$/.test(location.pathname)
+      ) : location.pathname === "/dashboard" || /^\/[^/]+\/[^/]+$/.test(location.pathname) ? ( //
         <div className="dashboard-actions">
           <DropdownMenu
             style={{
