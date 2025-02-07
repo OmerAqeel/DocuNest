@@ -105,18 +105,18 @@ export const Dashboard = () => {
   const [value, setValue] = useState("")
   const [workspaceName, setWorkspaceName] = useState("");
   const [workspaceDescription, setWorkspaceDescription] = useState("");
-  const [selectedUsers, setSelectedUsers] = useState([]);
+  const [selectedUsers, setSelectedUsers] = useState([user.email]);
   const workspaceID = uuidv4();
   const [workspaceCreated, setWorkspaceCreated] = useState(false);
 
   const listOfColors = [
-    "#a5f3fc", // Light blue
-    "#86efac", // Light green
-    "#fef1ca", // Light yellow
-    "#fca5a5", // Light red
-    "#d9f99d", // Light green
+    "#dc2626", // Red
+    "#ea580c", // Orange
+    "#65a30d", // Green
+    "#16a34a", // Emerald
+    "#0891b2", // Light green
     "#3b82f6", // Blue
-    "#A5B4FB", // Light purple
+    "#4f46e5", // Light purple
   ];
 
   let assistants = user.assistants;
@@ -310,7 +310,6 @@ export const Dashboard = () => {
     setLoading(true);
   
     let col = listOfColors[Math.floor(Math.random() * listOfColors.length)];
-
     const newWorkspace = {
       workspace: {
         id: workspaceID,
@@ -319,7 +318,9 @@ export const Dashboard = () => {
         headerColor: col,
       },
       users: selectedUsers, 
+      owner: user.email,
     };
+
   
     try {
       const response = await axios.post(
@@ -472,6 +473,7 @@ export const Dashboard = () => {
                                     <CommandItem
                                       key={Users.value}
                                       value={Users.value}
+                                      disabled = {Users.value === user.email}
                                       onSelect={(user) => {
                                         if (selectedUsers.includes(user)) {
                                           setSelectedUsers(

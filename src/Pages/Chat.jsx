@@ -316,7 +316,8 @@ export const Chat = () => {
                    onClick={handleNewChat}
                   {...(sideBarOpened
                     ? { color: "white" }
-                    : { color: "black" })}
+                    : { color: "black" })
+                  }
                   style={{
                     zIndex: "1000",
                     cursor: "pointer",

@@ -24,3 +24,8 @@ class ConversationRequest(BaseModel):
     conversation_id: str
     assistant_id: str
     messages: List[dict]
+
+class WorkspaceCreateRequest(BaseModel):
+    workspace: dict
+    users: List[str]
+    owner: str

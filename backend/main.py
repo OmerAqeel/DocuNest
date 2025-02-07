@@ -17,7 +17,7 @@ from passlib.context import CryptContext
 from datetime import datetime, timedelta
 from jwtAuthentication import create_access_token, get_secret_key
 from jose import jwt, JWTError
-from models import User, SignInRequest, DeleteAssistantRequest, ConversationRequest
+from models import User, SignInRequest, DeleteAssistantRequest, ConversationRequest, WorkspaceCreateRequest
 from openai import OpenAI
 import mimetypes
 import smtplib
@@ -168,14 +168,12 @@ async def create_assistant(assistant: dict, token: str = Depends(oauth2_scheme))
     return user_data
 
 @app.post("/create-workspace")
-async def create_workspace(
-    workspace: dict,
-    users: List[str]
-):
-    workspace_id = workspace.get("id")
-    workspace_name = workspace.get("name")
-    workspace_headerColor = workspace.get("headerColor")
-    
+async def create_workspace(request: WorkspaceCreateRequest):
+    workspace_id = request.workspace.get("id")
+    workspace_name = request.workspace.get("name")
+    workspace_headerColor = request.workspace.get("headerColor")
+    workspace_description = request.workspace.get("description")
+
     if not workspace_id or not workspace_name:
         raise HTTPException(status_code=400, detail="Workspace ID and name are required.")
 
@@ -185,14 +183,16 @@ async def create_workspace(
             Item={
                 "workspace_id": workspace_id,
                 "name": workspace_name,
-                "users": users,
+                "description": workspace_description,
+                "users": request.users,
                 "created_at": datetime.now().isoformat(),
                 "headerColor": workspace_headerColor,
+                "owner": request.owner
             }
         )
-        
+
         # Notify each user
-        for email in users:
+        for email in request.users:
             response = usersTable.get_item(Key={"email": email})
             user_data = response.get("Item")
             if not user_data:
@@ -214,7 +214,6 @@ async def create_workspace(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating workspace: {e}")
-
 
 
 @app.delete("/delete-assistant/")
@@ -278,6 +277,18 @@ async def get_workspaces(email: str):
         return {"workspaces": workspaces}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching workspaces: {e}")
+    
+
+@app.get("/get-workspace-data")
+async def get_workspace_data(workspaceName: str):
+    try:
+        response = workspaceTable.scan(
+            FilterExpression=Attr("name").eq(workspaceName)
+        )
+        workspace = response.get("Items", [])
+        return {"workspace": workspace}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching workspace data: {e}")
 
 
 

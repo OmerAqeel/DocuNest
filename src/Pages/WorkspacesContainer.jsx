@@ -122,10 +122,12 @@ useEffect(() => {
                     height: "9vw",
                     borderRadius: "50%",
                     textAlign: "center",
-                    marginTop: "1rem",
+                    justifyContent: "center",
+                    display: "flex",
+                    flexDirection: "column",
                   }}
                 >
-                  <CardTitle style={{ fontSize: "2rem", marginTop: "1.5rem" }}>
+                  <CardTitle style={{ fontSize: "2vw" }}>
                     {workspace.workspaceName.split(" ")[0].charAt(0).toUpperCase() +
                       (workspace.workspaceName.split(" ")[1]
                         ? workspace.workspaceName.split(" ")[1].charAt(0).toUpperCase()
