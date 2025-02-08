@@ -1,0 +1,63 @@
+.workspace-title-container{
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+    margin-bottom: 20px;
+    padding: 20px;
+}
+
+.workspace-title-disc-container{
+    display: flex;
+    align-items: center;
+    justify-content: start;
+    flex-direction: column;
+    margin-bottom: 20px;
+    padding: 20px;
+    gap: 10px;
+}
+
+.workspace-title{
+    font-size: 24px;
+    font-weight: 600;
+    left: 0px;
+}
+
+.leave-button{
+    background-color: #FF0000;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.toolsbar-container{
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+    justify-content: right;
+    margin-bottom: 20px;
+    padding: 10px;
+    gap: 20px;
+}
+
+.leave-button:hover{
+    background-color: white;
+    color: #FF0000;
+    border: 1px solid #FF0000;
+}
+
+.delete-button{
+    background-color: #FF0000;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.delete-button:hover{
+    background-color: white;
+    color: #FF0000;
+    border: 1px solid #FF0000;
+}

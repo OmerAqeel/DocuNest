@@ -17,9 +17,9 @@ const ProtectedRoute = ({ children }) => {
     return <Navigate to="/signin" replace />;
   }
 
-  if(userData?.assistants?.length === 0) {
-    return <Navigate to="/chat" replace />;
-  }
+  // if(userData?.assistants?.length === 0) {
+  //   return <Navigate to="/chat" replace />;
+  // }
 
   return children;
 };
