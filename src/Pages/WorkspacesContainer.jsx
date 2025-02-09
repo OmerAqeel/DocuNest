@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/card";
 import '../Styles/Workspaces.css';
 
+
 export const WorkspacesContainer = (workspacesCreated) => {
   const [workspacesList, setWorkspacesList] = useState([]);
   const [workspaceColors, setWorkspaceColors] = useState({});

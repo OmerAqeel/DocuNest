@@ -82,6 +82,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import AssistantsTable from "@/Components/AssistantsTable";
+import CreateAssistantModal from "@/Components/CreateAssistantModal";
 
 export const Dashboard = () => {
   const dispatch = useDispatch();
@@ -102,7 +104,7 @@ export const Dashboard = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [userInDropDown, setUserInDropDown] = useState([]);
-  const [value, setValue] = useState("")
+  const [value, setValue] = useState("");
   const [workspaceName, setWorkspaceName] = useState("");
   const [workspaceDescription, setWorkspaceDescription] = useState("");
   const [selectedUsers, setSelectedUsers] = useState([user.email]);
@@ -300,15 +302,14 @@ export const Dashboard = () => {
     }
   }, [assistantName, assistantDescription, filesArray]);
 
-
   const handleCreateWorkspace = async () => {
     if (!workspaceName || !workspaceDescription || selectedUsers.length === 0) {
       toast.error("Please fill out all fields and select at least one user.");
       return;
     }
-  
+
     setLoading(true);
-  
+
     let col = listOfColors[Math.floor(Math.random() * listOfColors.length)];
     const newWorkspace = {
       workspace: {
@@ -317,11 +318,10 @@ export const Dashboard = () => {
         description: workspaceDescription,
         headerColor: col,
       },
-      users: selectedUsers, 
+      users: selectedUsers,
       owner: user.email,
     };
 
-  
     try {
       const response = await axios.post(
         "http://localhost:8000/create-workspace",
@@ -333,10 +333,10 @@ export const Dashboard = () => {
           },
         }
       );
-  
+
       // Handle success (e.g., update UI, show a toast message)
       toast.success(`Workspace "${workspaceName}" created successfully!`);
-  
+
       // Optionally reset the form
       setWorkspaceName("");
       setWorkspaceDescription("");
@@ -355,7 +355,7 @@ export const Dashboard = () => {
     } finally {
       setLoading(false);
     }
-  };  
+  };
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -440,7 +440,9 @@ export const Dashboard = () => {
                           placeholder="Enter workspace description"
                           className="mt-2"
                           style={{ resize: "none" }}
-                          onChange={(e) => setWorkspaceDescription(e.target.value)}
+                          onChange={(e) =>
+                            setWorkspaceDescription(e.target.value)
+                          }
                         />
                       </div>
                       <div className="users-dropdown-container">
@@ -463,17 +465,17 @@ export const Dashboard = () => {
                               <CommandList>
                                 <CommandEmpty>No Users found.</CommandEmpty>
                                 <CommandGroup
-                                style={{
-                                  maxHeight: "160px",
-                                  width: "100%",
-                                  overflowY: "auto",
-                                }}
+                                  style={{
+                                    maxHeight: "160px",
+                                    width: "100%",
+                                    overflowY: "auto",
+                                  }}
                                 >
                                   {userInDropDown.map((Users) => (
                                     <CommandItem
                                       key={Users.value}
                                       value={Users.value}
-                                      disabled = {Users.value === user.email}
+                                      disabled={Users.value === user.email}
                                       onSelect={(user) => {
                                         if (selectedUsers.includes(user)) {
                                           setSelectedUsers(
@@ -483,17 +485,20 @@ export const Dashboard = () => {
                                           );
                                           return;
                                         }
-                                        setSelectedUsers([...selectedUsers, user]); 
+                                        setSelectedUsers([
+                                          ...selectedUsers,
+                                          user,
+                                        ]);
                                       }}
                                     >
                                       {`${Users.label} (${Users.value})`}
                                       <Check
-                                        className={(
-                                          "ml-auto",
+                                        className={
+                                          ("ml-auto",
                                           selectedUsers.includes(Users.value)
                                             ? "opacity-100"
-                                            : "opacity-0"
-                                        )}
+                                            : "opacity-0")
+                                        }
                                       />
                                     </CommandItem>
                                   ))}
@@ -519,7 +524,8 @@ export const Dashboard = () => {
                     >
                       Cancel
                     </Button>
-                    <Button className={`create-btn`}
+                    <Button
+                      className={`create-btn`}
                       disabled={
                         !workspaceName ||
                         !workspaceDescription ||
@@ -543,7 +549,7 @@ export const Dashboard = () => {
           )}
         </div>
         <div className="workspaces">
-          <WorkspacesContainer workspacesCreated={workspaceCreated}/>
+          <WorkspacesContainer workspacesCreated={workspaceCreated} />
         </div>
       </div>
       <br />
@@ -564,275 +570,25 @@ export const Dashboard = () => {
         </Button>
       </div>
       <hr />
-      <Table>
-        <TableHeader className="DataTable-header">
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Last Opened</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody className="table-body-container">
-          {assistantsLength === 0 ? (
-            <TableRow>
-              <TableCell colSpan="4" className="text-center">
-                No assistants created
-              </TableCell>
-            </TableRow>
-          ) : (
-            assistants.map((assistant) => (
-              <TableRow
-                key={assistant.id}
-                onMouseEnter={() => setHoveredAssistantId(assistant.id)}
-                onMouseLeave={() => setHoveredAssistantId(null)}
-              >
-                <TableCell>{assistant.name}</TableCell>
-                <TableCell>{formatDate(assistant.lastOpened)}</TableCell>
-                {hoveredAssistantId === assistant.id ? (
-                  <>
-                    <TableCell className="open-btn-cell">
-                      <Button
-                        variant="outline"
-                        style={{
-                          borderRadius: "10px",
-                          width: "100px",
-                          backgroundColor: "#4ade80",
-                          color: "white",
-                        }}
-                        onClick={() => handleOpenAssistant(assistant.id)}
-                        onMouseEnter={(e) => {
-                          e.target.style.backgroundColor = "white";
-                          e.target.style.color = "#4ade80";
-                          e.target.style.borderColor = "#4ade80";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.target.style.backgroundColor = "#4ade80";
-                          e.target.style.color = "white";
-                          e.target.style.borderColor = "#4ade80";
-                        }}
-                      >
-                        Open
-                      </Button>
-                    </TableCell>
-                    {assistantLoading ? (
-                      <TableCell>
-                        <span
-                          className="spinner"
-                          style={{ borderTopColor: "black" }}
-                        />
-                      </TableCell>
-                    ) : null}
-                  </>
-                ) : (
-                  <TableCell></TableCell>
-                )}
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        style={{ borderRadius: "50%" }}
-                      >
-                        <Ellipsis />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                      onMouseEnter={() => setHoveredAssistantId(null)}
-                    >
-                      <DropdownMenuItem
-                        style={{
-                          cursor: "pointer",
-                        }}
-                      >
-                        <Pencil size={15} />
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "10px",
-                                marginLeft: "6px",
-                                marginBottom: "2px",
-                                cursor: "pointer",
-                                fontSize: "14px",
-                              }}
-                            >
-                              <Trash size={15} color="red" />
-                              Delete
-                            </div>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertTitle>Delete Assistant</AlertTitle>
-                            </AlertDialogHeader>
-                            <AlertDialogDescription>
-                              Are you sure you want to delete this assistant?
-                              This action cannot be undone.
-                            </AlertDialogDescription>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() =>
-                                  handleDeleteAssistant(
-                                    assistant.id,
-                                    assistant.name
-                                  )
-                                }
-                                style={{
-                                  backgroundColor: "red",
-                                  color: "white",
-                                }}
-                              >
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+      <AssistantsTable
+        assistants={assistants}
+        onOpenAssistant={handleOpenAssistant}
+        onDeleteAssistant={handleDeleteAssistant}
+        assistantLoading={assistantLoading}
+        formatDate={formatDate}
+      />
       {newBtnClicked && (
-        <div className="modal-overlay">
-          <Card className="modal-card">
-            <div className="modal-close-btn">
-              <Button variant="ghost" size="icon" onClick={handleNewBtnClick}>
-                ✕
-              </Button>
-            </div>
-            <CardHeader>
-              <CardTitle>Create New Assistant</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="modal-content">
-                <div>
-                  <div className="labels-container">
-                    <Label>Name</Label>
-                  </div>
-                  <Input
-                    type="text"
-                    placeholder="Enter assistant name"
-                    className="mt-2"
-                    onChange={handleAssistantNameChange}
-                  />
-                </div>
-                <div>
-                  <div className="labels-container">
-                    <Label>Description</Label>
-                  </div>
-                  <Textarea
-                    placeholder="Enter assistant description"
-                    className="mt-2"
-                    onChange={handleAssistantDescriptionChange}
-                  />
-                </div>
-                <div className="upload-btn-container">
-                  <input
-                    id="file-upload"
-                    type="file"
-                    multiple
-                    style={{ display: "none" }} // Hide input but keep it functional
-                    onChange={handleFileUpload}
-                  />
-                  <Button
-                    variant="outline"
-                    style={{ borderRadius: "10px", width: "100px" }}
-                    onClick={() =>
-                      document.getElementById("file-upload").click()
-                    }
-                  >
-                    <Upload className="mr-2" />
-                    Upload
-                  </Button>
-                </div>
-              </div>
-              <hr
-                style={{
-                  marginTop: "10px",
-                }}
-              />
-              <div className="files-container">
-                {filesArray.length === 0 ? (
-                  <p
-                    style={{
-                      color: "#9CA3AF",
-                      marginTop: "10px",
-                    }}
-                  >
-                    No files uploaded
-                  </p>
-                ) : (
-                  filesArray.map((file, index) => (
-                    <>
-                      <Alert key={index} variant="outline" className="file-box">
-                        <div className="file-detail-container">
-                          <AlertDescription>
-                            {file.extension == "pdf" ? (
-                              <FaRegFilePdf size={20} />
-                            ) : (
-                              <TbFileTypeDocx size={20} />
-                            )}
-                          </AlertDescription>
-                          <AlertDescription>
-                            {file.name.split(".").slice(0, -1).join(".")}
-                          </AlertDescription>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleFileDelete(file)}
-                          style={{
-                            onHover: { color: "red", backgroundColor: "red" },
-                          }}
-                        >
-                          <Trash color="red" />
-                        </Button>
-                      </Alert>
-                    </>
-                  ))
-                )}
-              </div>
-            </CardContent>
-            <CardFooter
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <Button
-                className="cancel-btn"
-                variant="outline"
-                onClick={handleNewBtnClick}
-              >
-                Cancel
-              </Button>
-              <Button
-                className={`create-btn`}
-                disabled={!validAssistant}
-                onClick={handleCreateAssistant}
-              >
-                {loading ? (
-                  <span
-                    className="spinner"
-                    style={{ borderTopColor: "white" }}
-                  />
-                ) : (
-                  "Create"
-                )}
-              </Button>
-            </CardFooter>
-          </Card>
-        </div>
+        <CreateAssistantModal
+          onClose={handleNewBtnClick}
+          onAssistantNameChange={handleAssistantNameChange}
+          onAssistantDescriptionChange={handleAssistantDescriptionChange}
+          onFileUpload={handleFileUpload}
+          filesArray={filesArray}
+          onFileDelete={handleFileDelete}
+          validAssistant={validAssistant}
+          onCreateAssistant={handleCreateAssistant}
+          loading={loading}
+        />
       )}
       <br />
       <br />
