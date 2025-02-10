@@ -34,6 +34,7 @@ const AssistantsTable = ({
   onDeleteAssistant,
   assistantLoading,
   formatDate,
+  page,
 }) => {
   // Local state for managing which assistant is hovered.
   const [hoveredAssistantId, setHoveredAssistantId] = useState(null);
@@ -44,6 +45,11 @@ const AssistantsTable = ({
         <TableRow>
           <TableHead>Name</TableHead>
           <TableHead>Last Opened</TableHead>
+          {
+            page === "workspace" ? (
+              <TableHead>Created By</TableHead>
+            ) : null
+          }
         </TableRow>
       </TableHeader>
       <TableBody className="table-body-container">
@@ -62,6 +68,11 @@ const AssistantsTable = ({
             >
               <TableCell>{assistant.name}</TableCell>
               <TableCell>{formatDate(assistant.lastOpened)}</TableCell>
+              {
+                page === "workspace" ? (
+                  <TableCell>{assistant.createdBy}</TableCell>
+                ) : null
+              }
               {hoveredAssistantId === assistant.id ? (
                 <>
                   <TableCell className="open-btn-cell">

@@ -17,7 +17,7 @@ from passlib.context import CryptContext
 from datetime import datetime, timedelta
 from jwtAuthentication import create_access_token, get_secret_key
 from jose import jwt, JWTError
-from models import User, SignInRequest, DeleteAssistantRequest, ConversationRequest, WorkspaceCreateRequest
+from models import User, SignInRequest, DeleteAssistantRequest, ConversationRequest, WorkspaceCreateRequest, DeleteWorkspaceAssistantRequest
 from openai import OpenAI
 import mimetypes
 import smtplib
@@ -183,6 +183,7 @@ async def create_workspace(request: WorkspaceCreateRequest):
             Item={
                 "workspace_id": workspace_id,
                 "name": workspace_name,
+                "assistants": [],
                 "description": workspace_description,
                 "users": request.users,
                 "created_at": datetime.now().isoformat(),
@@ -214,6 +215,58 @@ async def create_workspace(request: WorkspaceCreateRequest):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating workspace: {e}")
+    
+
+@app.post("/create-workspace-assistant")
+async def create_workspace_assistant(assistant: dict, token: str = Depends(oauth2_scheme)):
+    secret_key = get_secret_key()
+    try:
+        # Verify the token
+        payload = jwt.decode(token, secret_key, algorithms=["HS256"])
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    email = payload.get("email")
+    if not email:
+        raise HTTPException(status_code=401, detail="Invalid token payload")
+
+    # Extract workspace name from the assistant data
+    workspace_name = assistant.get("workspaceName")
+    if not workspace_name:
+        raise HTTPException(status_code=400, detail="Workspace name is required")
+
+    try:
+        # Get the workspace data
+        response = workspaceTable.scan(
+            FilterExpression=Attr("name").eq(workspace_name)
+        )
+        workspaces = response.get("Items", [])
+        
+        if not workspaces:
+            raise HTTPException(status_code=404, detail="Workspace not found")
+        
+        workspace = workspaces[0]
+        
+        # Add or update the assistants list in the workspace
+        if "assistants" not in workspace:
+            workspace["assistants"] = []
+        
+        workspace["assistants"].append(assistant)
+        
+        # Update the workspace in DynamoDB
+        workspaceTable.put_item(Item=workspace)
+
+        return {
+            "message": "Assistant created successfully",
+            "workspace": workspace,
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Error creating workspace assistant: {str(e)}"
+        )
+
 
 
 @app.delete("/delete-assistant/")
@@ -259,6 +312,54 @@ async def delete_assistant(
 
     return {"message": "Assistant deleted successfully", "assistants": user_data["assistants"]}
 
+@app.delete("/delete-workspace-assistant/")
+async def delete_workspace_assistant( 
+    request: DeleteWorkspaceAssistantRequest,
+    token: str = Depends(oauth2_scheme)
+):
+    # Decode the token and verify the user
+    secret_key = get_secret_key()
+    try:
+        payload = jwt.decode(token, secret_key, algorithms=["HS256"])
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    email = payload.get("email")
+    if not email:
+        raise HTTPException(status_code=401, detail="Invalid token payload")
+
+    # Extract assistant_id and workspace_name from the request
+    assistant_id = request.assistant_id
+    workspaceName = request.workspaceName
+
+    # Fetch workspace data
+    response = workspaceTable.scan(
+        FilterExpression=Attr("name").eq(workspaceName)
+    )
+    workspaces = response.get("Items", [])
+    if not workspaces:
+        raise HTTPException(status_code=404, detail="Workspace not found")
+
+    workspace = workspaces[0]
+
+    # Remove the assistant from the workspace
+    assistants = workspace.get("assistants", [])
+    workspace["assistants"] = [a for a in assistants if a["id"] != assistant_id]
+
+    # Update DynamoDB
+    workspaceTable.put_item(Item=workspace)
+
+    # Delete S3 folder associated with the assistant
+    folder_prefix = f"{request.workspaceName}/{assistant_id}/"
+    s3_objects = s3_client.list_objects_v2(Bucket=BUCKET_NAME, Prefix=folder_prefix).get("Contents", [])
+    if s3_objects:
+        s3_client.delete_objects(
+            Bucket=BUCKET_NAME,
+            Delete={"Objects": [{"Key": obj["Key"]} for obj in s3_objects]}
+        )
+
+    return {"message": "Workspace assistant deleted successfully", "assistants": workspace["assistants"]}
+    
 
 @app.get("/get-workspaces")
 async def get_workspaces(email: str):

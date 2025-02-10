@@ -1,9 +1,12 @@
 import { React, useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { use } from "react";
 import "../Styles/Workspace.css";
 import { Button } from "@/components/ui/button";
+import { v4 as uuidv4 } from "uuid";
+import { useDispatch } from "react-redux";
 import {
   Card,
   CardContent,
@@ -17,6 +20,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { toast, Toaster } from "sonner";
 import AssistantsTable from "@/Components/AssistantsTable";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
@@ -26,12 +30,14 @@ import { Check, ChevronsUpDown } from "lucide-react";
 import { CiUser } from "react-icons/ci";
 import { Ellipsis } from "lucide-react";
 import { Plus } from "lucide-react";
+import { IoCheckmarkDone } from "react-icons/io5";
 import CreateAssistantModal from "@/Components/CreateAssistantModal";
 
 export const Workspace = () => {
   const user = localStorage.getItem("persist:root");
   const parsedUser = JSON.parse(user).userData;
   let JSONparsedUser = JSON.parse(parsedUser);
+  const navigate = useNavigate();
 
   const [membersBtnClicked, setMembersBtnClicked] = useState(false);
   const [workspaceMembers, setWorkspaceMembers] = useState([]);
@@ -42,11 +48,15 @@ export const Workspace = () => {
   const [filesArray, setFilesArray] = useState([]);
   const [validAssistant, setValidAssistant] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [assistantLoading, setAssistantLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState("");
 
   const { userName, workspaceName } = useParams();
   const [workspaceData, setWorkspaceData] = useState({});
   const headerColor = workspaceData.workspace?.[0]?.headerColor;
   const ownerOfWorkspace = workspaceData.workspace?.[0]?.owner;
+  const assistants = workspaceData.workspace?.[0]?.assistants;
+  console.log(assistants);
 
   const handleAssistantNewBtnClick = () => {
     setAssistantNewBtnClicked(false);
@@ -67,6 +77,56 @@ export const Workspace = () => {
 
   const handleFileDelete = (file) => {
     setFilesArray(filesArray.filter((f) => f !== file));
+  };
+
+  const handleOpenAssistant = (assistantId) => {
+    setAssistantLoading(true);
+    let conversationID = uuidv4();
+    setTimeout(() => {
+      setAssistantLoading(false);
+    }, 5000);
+
+    navigate(`/chat/${workspaceName}/${conversationID}`); // Navigates to /chat/{assistantId}/{conversationID}
+  };
+
+  const formatDate = (isoDate) => {
+    const date = new Date(isoDate);
+    return date.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  const handleFileUploadToS3 = async (assistantId) => {
+    const formData = new FormData();
+
+    // Add files to formData
+    filesArray.forEach((file) => {
+      formData.append("files", file); // Append the File objects
+    });
+
+    // Add assistant_id, assistant_name, and user_id to formData
+    formData.append("assistant_id", assistantId); // Pass the assistant's ID
+    formData.append("assistant_name", assistantName); // Pass the assistant's name
+    formData.append("user_id", workspaceName); // pass the name of the workspace
+
+    console.log(user.user_id);
+    try {
+      // Call the backend API to upload files
+      const response = await axios.post(
+        "http://localhost:8000/upload/",
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+    } catch (error) {
+      console.error("Error uploading files:", error);
+    }
   };
 
   const handleCreateAssistant = async () => {
@@ -100,13 +160,23 @@ export const Workspace = () => {
       const updatedUserData = response.data;
 
       // Update Redux state with the new assistant
-      dispatch(setUserData(updatedUserData));
+      // dispatch(setUserData(updatedUserData));
 
       // Reset form and close modal
       setAssistantName("");
       setAssistantDescription("");
       setFilesArray([]);
-      setNewBtnClicked(false);
+      setAssistantNewBtnClicked(false);
+
+      const updatedWorkspaceData = {
+        ...workspaceData,
+        workspace: workspaceData.workspace.map((workspace) => ({
+          ...workspace,
+          assistants: [...workspace.assistants, newAssistant],
+        })),
+      };
+
+      setWorkspaceData(updatedWorkspaceData);
 
       // Display success message
       toast.success(`Assistant "${assistantName}" created successfully!`, {
@@ -164,11 +234,65 @@ export const Workspace = () => {
     }
   };
 
+  const handleDeleteAssistant = async (assistantId, assistantName) => {
+    setLoading(true);
+    setLoadingMessage(`Deleting assistant "${assistantName}"...`);
+    try {
+      const response = await axios.delete(
+        "http://localhost:8000/delete-workspace-assistant/",
+        {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+          },
+          data: {
+            assistant_id: assistantId,
+            workspaceName: workspaceName,
+          },
+        }
+      );
+
+      // Create a deep copy of workspaceData
+      const updatedWorkspaceData = {
+        ...workspaceData,
+        workspace: workspaceData.workspace.map((workspace) => ({
+          ...workspace,
+          assistants: workspace.assistants.filter((a) => a.id !== assistantId),
+        })),
+      };
+
+      // Update the workspace data state
+      setWorkspaceData(updatedWorkspaceData);
+
+      toast.success(`Assistant "${assistantName}" deleted successfully.`);
+    } catch (error) {
+      console.error("Error deleting assistant:", error);
+      toast.error(
+        error.response?.data?.detail ||
+          "Failed to delete assistant. Please try again."
+      );
+    } finally {
+      setLoading(false);
+      setLoadingMessage("");
+    }
+  };
+
   const handleMemebersButton = () => {
     setMembersBtnClicked(true);
 
     setWorkspaceMembers(workspaceData.workspace?.[0]?.users);
   };
+
+  useEffect(() => {
+    if (
+      assistantName.length > 0 &&
+      assistantDescription.length > 0 &&
+      filesArray.length > 0
+    ) {
+      setValidAssistant(true);
+    } else {
+      setValidAssistant(false);
+    }
+  }, [assistantName, assistantDescription, filesArray]);
 
   useEffect(() => {
     try {
@@ -358,6 +482,10 @@ export const Workspace = () => {
             </TabsList>
           </Tabs>
           <hr />
+          <Toaster
+            position="bottom-right"
+            style={{ backgroundColor: "black", color: "white" }}
+          />
         </div>
       </div>
       <div className="below-section">
@@ -381,16 +509,28 @@ export const Workspace = () => {
           </div>
         ) : null}
         {assistantNewBtnClicked ? (
-          <CreateAssistantModal
-            onClose={handleAssistantNewBtnClick}
-            onAssistantNameChange={handleAssistantNameChange}
-            onAssistantDescriptionChange={handleAssistantDescriptionChange}
-            onFileUpload={handleFileUpload}
-            filesArray={filesArray}
-            onFileDelete={handleFileDelete}
-            validAssistant={validAssistant}
-            onCreateAssistant={handleCreateAssistant}
-            loading={loading}
+          <>
+            <CreateAssistantModal
+              onClose={handleAssistantNewBtnClick}
+              onAssistantNameChange={handleAssistantNameChange}
+              onAssistantDescriptionChange={handleAssistantDescriptionChange}
+              onFileUpload={handleFileUpload}
+              filesArray={filesArray}
+              onFileDelete={handleFileDelete}
+              validAssistant={validAssistant}
+              onCreateAssistant={handleCreateAssistant}
+              loading={loading}
+            />
+          </>
+        ) : null}
+        {userTab === "assistants" ? (
+          <AssistantsTable
+            assistants={assistants}
+            onOpenAssistant={handleOpenAssistant}
+            onDeleteAssistant={handleDeleteAssistant}
+            formatDate={formatDate}
+            assistantLoading={assistantLoading}
+            page={"workspace"}
           />
         ) : null}
       </div>

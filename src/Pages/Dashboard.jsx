@@ -6,15 +6,6 @@ import { Button } from "@/components/ui/button";
 import "../Styles/Dashboard.css";
 import { v4 as uuidv4 } from "uuid";
 import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   Card,
   CardContent,
   CardDescription,
@@ -22,44 +13,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuPortal,
-  DropdownMenuSeparator,
-  DropdownMenuShortcut,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus } from "lucide-react";
-import { Ellipsis } from "lucide-react";
-import { Trash } from "lucide-react";
-import { Upload } from "lucide-react";
-import { Pencil } from "lucide-react";
-import { User } from "lucide-react";
-import { ChevronDown } from "lucide-react";
-import { FaRegFilePdf } from "react-icons/fa6";
-import { TbFileTypeDocx } from "react-icons/tb";
 import { IoCheckmarkDone } from "react-icons/io5";
 import { MdGroups2 } from "react-icons/md";
 import { useSelector } from "react-redux";
@@ -576,6 +533,7 @@ export const Dashboard = () => {
         onDeleteAssistant={handleDeleteAssistant}
         assistantLoading={assistantLoading}
         formatDate={formatDate}
+        page={"dashboard"}
       />
       {newBtnClicked && (
         <CreateAssistantModal
