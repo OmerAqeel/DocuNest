@@ -112,7 +112,10 @@ useEffect(() => {
                   cursor: "pointer",
                   gap: "1rem",
                 }}
-                onClick={() => navigate(`/${userName}/${workspace.workspaceName}`)}
+                onClick={() => {
+                  navigate(`/${userName}/${workspace.workspaceName}`);
+                  sessionStorage.setItem("workspaceName", workspace.workspaceName);
+                }}
               >
                 <CardHeader
                   id="workspace-card-header"

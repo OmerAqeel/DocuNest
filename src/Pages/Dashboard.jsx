@@ -104,6 +104,7 @@ export const Dashboard = () => {
   };
 
   const handleOpenAssistant = (assistantId) => {
+    sessionStorage.setItem("userOnWorkspaceAssistant", false);
     setAssistantLoading(true);
     let conversationID = uuidv4();
     setTimeout(() => {

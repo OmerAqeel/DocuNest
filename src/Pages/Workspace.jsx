@@ -38,6 +38,7 @@ export const Workspace = () => {
   const parsedUser = JSON.parse(user).userData;
   let JSONparsedUser = JSON.parse(parsedUser);
   const navigate = useNavigate();
+  // sessionStorage.setItem("userOnWorkspaceAssistant", false);
 
   const [membersBtnClicked, setMembersBtnClicked] = useState(false);
   const [workspaceMembers, setWorkspaceMembers] = useState([]);
@@ -80,13 +81,15 @@ export const Workspace = () => {
   };
 
   const handleOpenAssistant = (assistantId) => {
+    sessionStorage.setItem("userOnWorkspaceAssistant", true);
+    sessionStorage.setItem("workspaceColor", headerColor);
     setAssistantLoading(true);
     let conversationID = uuidv4();
     setTimeout(() => {
       setAssistantLoading(false);
     }, 5000);
 
-    navigate(`/chat/${workspaceName}/${conversationID}`); // Navigates to /chat/{assistantId}/{conversationID}
+    navigate(`/chat/${assistantId}/${conversationID}`); // Navigates to /chat/{assistantId}/{conversationID}
   };
 
   const formatDate = (isoDate) => {
