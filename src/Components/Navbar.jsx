@@ -194,6 +194,7 @@ export const Navbar = () => {
               <button
                 className="notification-btn"
                 style={{ position: "relative" }}
+                onClick={() => setNotificationRead(true)}
               >
                 <Bell
                   style={{ height: "22px", width: "22px" }}
@@ -220,7 +221,11 @@ export const Navbar = () => {
                 )}
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent>
+            <DropdownMenuContent
+            style={{
+              overflowY: "auto",
+            }}
+            >
               {notifications.length > 0 ? (
                 notifications.map((notification, index) => (
                   <div

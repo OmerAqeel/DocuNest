@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/card";
 import '../Styles/Workspaces.css';
 
+
 export const WorkspacesContainer = (workspacesCreated) => {
   const [workspacesList, setWorkspacesList] = useState([]);
   const [workspaceColors, setWorkspaceColors] = useState({});
@@ -111,7 +112,10 @@ useEffect(() => {
                   cursor: "pointer",
                   gap: "1rem",
                 }}
-                onClick={() => navigate(`/${userName}/${workspace.workspaceName}`)}
+                onClick={() => {
+                  navigate(`/${userName}/${workspace.workspaceName}`);
+                  sessionStorage.setItem("workspaceName", workspace.workspaceName);
+                }}
               >
                 <CardHeader
                   id="workspace-card-header"

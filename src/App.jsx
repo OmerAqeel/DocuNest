@@ -10,6 +10,10 @@ import ProtectedRoute from "./ProtectedRoute";
 
 
 function App() {
+
+  // const workSpaceName = sessionStorage.setItem("workspaceName", "");
+  // const userOnWorkspaceAssistant = sessionStorage.setItem("userOnWorkspaceAssistant", false);
+
   return (
     <Router>
       <div className="App">

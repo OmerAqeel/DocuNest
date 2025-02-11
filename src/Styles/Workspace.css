@@ -8,18 +8,30 @@
 
 .workspace-title-disc-container{
     display: flex;
-    align-items: center;
+    align-items: baseline;
     justify-content: start;
     flex-direction: column;
     margin-bottom: 20px;
+    margin-left: 25px;
     padding: 20px;
     gap: 10px;
+    border-bottom: 1px solid #E0E0E0;
+    border-top: 1px solid #E0E0E0;
+    width: 40vw;
 }
 
 .workspace-title{
     font-size: 24px;
     font-weight: 600;
     left: 0px;
+}
+
+.workspace-description{
+    font-size: 12px;
+    font-weight: 400;
+    left: 0px;
+    position: relative;
+    text-align: justify;
 }
 
 .leave-button{

@@ -45,6 +45,16 @@ export const Chat = () => {
   const [chatMiniMode, setChatMiniMode] = useState(false); // For mini mode state
   const [sideBarOpened, setSideBarOpened] = useState(true);
   const [conversations, setConversations] = useState([]);
+  const [workspaceColor, setWorkspaceColor] = useState("");
+  const userOnWorkspaceAssistant = sessionStorage.getItem("userOnWorkspaceAssistant");
+
+  // Move the workspaceColor state update into useEffect
+  useEffect(() => {
+    if (sessionStorage.getItem("userOnWorkspaceAssistant") === "true") {
+      const color = sessionStorage.getItem("workspaceColor");
+      setWorkspaceColor(color);
+    }
+  }, []); // Runs once on mount
 
   const parsedUser = JSON.parse(user);
   const userData = parsedUser?.userData
@@ -83,7 +93,8 @@ export const Chat = () => {
   };
 
   const handleBackBtnClick = async () => {
-    navigate("/dashboard");
+    // sessionStorage.setItem("workspaceName", "");
+    window.history.back();
 
     if (messages.length > 0) {
       try {
@@ -132,11 +143,15 @@ export const Chat = () => {
 
     // Show the "thinking" state (three dots animation)
     setIsThinking(true);
+    const userOnWorkspaceAssistant = sessionStorage.getItem("userOnWorkspaceAssistant");
+    const workspaceName = sessionStorage.getItem("workspaceName");
+    
+    const userIdParam = userOnWorkspaceAssistant === "true" ? workspaceName : user_id;
 
     try {
       const response = await axios.get("http://localhost:8000/ask/", {
         params: {
-          user_id: user_id,
+          user_id: userIdParam,
           assistant_id: assistantId,
           query: prompt,
         },
@@ -247,6 +262,25 @@ export const Chat = () => {
     textAlign: "center", // Optional alignment
   };
 
+  // Helper function to convert hex to RGBA
+const hexToRgba = (hex, alpha = 1) => {
+  // Remove the '#' if present
+  hex = hex.replace('#', '');
+
+  // If shorthand form (e.g. "3b8"), convert to full form ("33bb88")
+  if (hex.length === 3) {
+    hex = hex.split('').map((char) => char + char).join('');
+  }
+
+  // Parse r, g, b values
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
+
   useEffect(() => {
     if (conversationID) {
       const currentConversation = conversations.find(
@@ -273,11 +307,12 @@ export const Chat = () => {
             <div
               className={`sidebar ${sideBarOpened ? "open" : ""}`}
               style={{
-                backgroundColor: "#373c44",
+                backgroundColor: workspaceColor|| "#373c44",
                 width: "20vw",
                 height: "100vh",
                 position: "absolute",
                 left: "0",
+                cursor: "pointer",
               }}
             >
               <br />
@@ -325,7 +360,14 @@ export const Chat = () => {
                     left: "60px",
                   }}
                   />
-                  <Button onClick={handleBackBtnClick}>
+                  <Button onClick={handleBackBtnClick}
+                  style={{
+                    backgroundColor: workspaceColor || "black",
+                    marginLeft: "10px",
+                    marginTop: "10px",
+                    borderRadius: "15px",
+                  }}
+                  >
                     <ArrowLeft size={24} /> Back
                   </Button>
                 </Tooltip>
@@ -366,6 +408,10 @@ export const Chat = () => {
                     <div
                       key={index}
                       className={`chat-message ${message.sender}-message`}
+                      style={{
+                        backgroundColor: message.sender === "bot" ? hexToRgba(workspaceColor, 0.1) : (workspaceColor || "#818cf8"),
+                      }
+                      }
                     >
                       {message.sender === "bot" ? (
                         <div>
@@ -446,6 +492,7 @@ export const Chat = () => {
                     style={{
                       borderRadius: "15px",
                       outline: "none",
+                      backgroundColor: workspaceColor || "black",
                     }}
                   >
                     <SendHorizontal size={20} color="white" /> Send

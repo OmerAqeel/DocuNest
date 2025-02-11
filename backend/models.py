@@ -19,6 +19,10 @@ class SignInRequest(BaseModel):
 class DeleteAssistantRequest(BaseModel):
     assistant_id: str
 
+class DeleteWorkspaceAssistantRequest(BaseModel):
+    assistant_id: str
+    workspaceName: str
+
 class ConversationRequest(BaseModel):
     user_id: str
     conversation_id: str
