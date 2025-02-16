@@ -260,7 +260,7 @@ export const Navbar = () => {
               <DropdownMenuGroup>
                 <DropdownMenuItem>
                   <UserPen size={15} />
-                  <Link to="/profile">Profile</Link>
+                  <Link to="/profile">User details</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem>
                   <Settings size={15} />

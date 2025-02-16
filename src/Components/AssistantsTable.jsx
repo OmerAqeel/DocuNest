@@ -40,7 +40,8 @@ const AssistantsTable = ({
   const [hoveredAssistantId, setHoveredAssistantId] = useState(null);
 
   return (
-    <Table>
+    <Table
+    >
       <TableHeader className="DataTable-header">
         <TableRow>
           <TableHead>Name</TableHead>
