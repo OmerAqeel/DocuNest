@@ -4,6 +4,7 @@ import { Navbar } from './Components/Navbar';
 import { SignIn } from './Pages/SignIn';
 import { Dashboard } from './Pages/Dashboard';
 import { Chat } from './Pages/Chat';
+import { Profile } from './Pages/Profile';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Workspace } from './Pages/Workspace';
 import ProtectedRoute from "./ProtectedRoute";
@@ -42,6 +43,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Workspace />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
               </ProtectedRoute>
             }
           />
