@@ -15,6 +15,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { AppleIcon } from "lucide-react";
 
 export const SignUp = () => {
   const userID = uuidv4(); // Use uuidv4 to generate user ID
@@ -103,6 +104,7 @@ export const SignUp = () => {
         name,
         email,
         password,
+        ApiKey: "",
       });
   
       if (response.status === 200) {

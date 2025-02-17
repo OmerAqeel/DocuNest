@@ -105,6 +105,7 @@ async def signup(user: User):
                 "Name": user.name,
                 "email": user.email,
                 "Password": hashed_password,
+                "api_key": "",
                 "assistants" : [],
                 "created_at": datetime.now().isoformat(),
             }

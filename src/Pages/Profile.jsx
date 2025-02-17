@@ -11,11 +11,12 @@ import '../Styles/Profile.css'
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { User } from 'lucide-react';
 
 export const Profile = () => {
   const user = localStorage.getItem("persist:root");
 
-  const[editBtnClicked, setEditBtnClicked] = useState(false);
+  const[editBtnClicked, setEditBtnClicked] = useState(false); 
   const[openAIKey, setOpenAIKey] = useState("");
 
   const handleEditBtnClick = () => {
@@ -29,6 +30,10 @@ export const Profile = () => {
   // getting the name of the user from the local storage
   const Name = JSONparsedUser?.Name;
   const Email = JSONparsedUser?.email;
+  const assistantsLength = JSONparsedUser?.assistants.length;
+  const workspaceLength = JSONparsedUser?.workspaces.length;
+
+  const apiKey = JSONparsedUser?.apiKey;
 
 
   return (
@@ -51,7 +56,17 @@ export const Profile = () => {
          }}
       >
         <CardHeader>
-          <CardTitle>Profile</CardTitle>
+          <CardTitle
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              color: "black",
+              gap: "10px",
+            }}
+          >
+            <User size={30} />
+            User Details</CardTitle>
         </CardHeader>
         <CardContent>
           <CardDescription
@@ -61,11 +76,13 @@ export const Profile = () => {
               // color: "black",
               flexDirection: "column",
               // justifyContent: "center",
-              alignItems: "center",
+              alignItems: "baseline",
             }}
           >
             <p>{`Username: ${Name}`}</p>
             <p>{`Email: ${Email}`}</p>
+            <p>{`Assistants created: ${assistantsLength}`}</p>
+            <p>{`Workspaces: ${workspaceLength}`}</p>
             <div className="api-key-container"
             style={{
               display: "flex",
@@ -91,6 +108,7 @@ export const Profile = () => {
               className="mt-2"
               // type="password"
               disabled={!editBtnClicked}
+              value={apiKey}
             />  
             <Button
               // variant="outline"
