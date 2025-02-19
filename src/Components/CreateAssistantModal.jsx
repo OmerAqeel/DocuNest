@@ -100,7 +100,9 @@ const CreateAssistantModal = ({
                 <Alert key={index} variant="outline" className="file-box">
                   <div className="file-detail-container">
                     <AlertDescription>
-                      {file.extension === "pdf" ? (
+                      {
+                        file.name.split(".").slice(-1)[0] === "pdf" 
+                       ? (
                         <FaRegFilePdf size={20} />
                       ) : (
                         <TbFileTypeDocx size={20} />

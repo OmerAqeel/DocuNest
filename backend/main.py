@@ -267,7 +267,307 @@ async def create_workspace_assistant(assistant: dict, token: str = Depends(oauth
             status_code=500, 
             detail=f"Error creating workspace assistant: {str(e)}"
         )
+    
 
+@app.post("/uploadWorkspaceDoc/")
+async def upload_workspace_documents(
+    workspace_name: str = Form(...),
+    uploaded_by: str = Form(...),
+    files: List[UploadFile] = File(...),
+    token: str = Depends(oauth2_scheme)
+):
+    # Verify the token
+    secret_key = get_secret_key()
+    try:
+        payload = jwt.decode(token, secret_key, algorithms=["HS256"])
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    email = payload.get("email")
+    if not email:
+        raise HTTPException(status_code=401, detail="Invalid token payload")
+
+    # Get workspace data
+    try:
+        response = workspaceTable.scan(
+            FilterExpression=Attr("name").eq(workspace_name)
+        )
+        workspaces = response.get("Items", [])
+        
+        if not workspaces:
+            raise HTTPException(status_code=404, detail="Workspace not found")
+        
+        workspace = workspaces[0]
+        
+        # Check if user is a member of the workspace
+        if email not in workspace.get("users", []):
+            raise HTTPException(status_code=403, detail="User not authorized to upload to this workspace")
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Error fetching workspace: {str(e)}"
+        )
+
+    # Process and upload files
+    uploaded_file_info = []
+    
+    for file in files:
+        # Create a temporary file
+        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+            temp_file.write(await file.read())
+            temp_path = temp_file.name
+
+        # Get file metadata
+        file_metadata = {
+            "filename": file.filename,
+            "uploaded_by": uploaded_by,
+            "upload_time": datetime.now().isoformat(),
+            "file_size": os.path.getsize(temp_path)
+        }
+        
+        # Upload to S3
+        folder_path = f"{workspace_name}/documents"
+        file_key = f"{folder_path}/{file.filename}"
+        metadata_key = f"{folder_path}/{file.filename}.metadata.json"
+        
+        # Determine content type
+        content_type, _ = mimetypes.guess_type(file.filename)
+        if not content_type:
+            content_type = "application/octet-stream"
+        
+        # Upload the file
+        s3_client.upload_file(
+            temp_path,
+            BUCKET_NAME,
+            file_key,
+            ExtraArgs={
+                "ContentDisposition": "inline",
+                "ContentType": content_type,
+                "Metadata": {
+                    "uploaded_by": uploaded_by
+                }
+            }
+        )
+        
+        # Upload metadata as separate JSON
+        metadata_json = json.dumps(file_metadata).encode("utf-8")
+        s3_client.put_object(
+            Bucket=BUCKET_NAME,
+            Key=metadata_key,
+            Body=metadata_json,
+            ContentType="application/json"
+        )
+        
+        # Clean up temporary file
+        os.remove(temp_path)
+        
+        # Add to the list of uploaded files
+        uploaded_file_info.append({
+            "filename": file.filename,
+            "s3_key": file_key
+        })
+        
+    # Update workspace object with document info
+    if "documents" not in workspace:
+        workspace["documents"] = []
+        
+    workspace["documents"].extend(uploaded_file_info)
+    
+    # Update workspace in DynamoDB
+    workspaceTable.put_item(Item=workspace)
+    
+    return {
+        "message": f"{len(files)} files uploaded successfully",
+        "uploaded_files": uploaded_file_info
+    }
+
+@app.get("/getWorkspaceDocuments/")
+async def get_workspace_documents(
+    workspace_name: str,
+    token: str = Depends(oauth2_scheme)
+):
+    # Verify the token
+    secret_key = get_secret_key()
+    try:
+        payload = jwt.decode(token, secret_key, algorithms=["HS256"])
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    email = payload.get("email")
+    if not email:
+        raise HTTPException(status_code=401, detail="Invalid token payload")
+
+    # Get workspace data
+    try:
+        response = workspaceTable.scan(
+            FilterExpression=Attr("name").eq(workspace_name)
+        )
+        workspaces = response.get("Items", [])
+        
+        if not workspaces:
+            raise HTTPException(status_code=404, detail="Workspace not found")
+        
+        workspace = workspaces[0]
+        
+        # Check if user is a member of the workspace
+        if email not in workspace.get("users", []):
+            raise HTTPException(status_code=403, detail="User not authorized to access this workspace")
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Error fetching workspace: {str(e)}"
+        )
+
+    # List all document files in the workspace folder
+    folder_prefix = f"{workspace_name}/documents/"
+    try:
+        response = s3_client.list_objects_v2(Bucket=BUCKET_NAME, Prefix=folder_prefix)
+        
+        # Check if there are any files
+        if 'Contents' not in response:
+            return {"documents": []}
+        
+        documents = []
+        
+        # Filter out metadata files and get document info
+        for obj in response['Contents']:
+            key = obj['Key']
+            # Skip metadata files
+            if key.endswith('.metadata.json'):
+                continue
+            
+            # Extract filename from the key
+            filename = key.split('/')[-1]
+            
+            # Get metadata for this file
+            metadata_key = f"{folder_prefix}{filename}.metadata.json"
+            try:
+                metadata_obj = s3_client.get_object(Bucket=BUCKET_NAME, Key=metadata_key)
+                metadata = json.loads(metadata_obj['Body'].read().decode('utf-8'))
+            except:
+                # If metadata is missing, create minimal metadata
+                metadata = {
+                    "filename": filename,
+                    "uploaded_by": "Unknown",
+                    "upload_time": obj['LastModified'].isoformat()
+                }
+            
+            # Generate a presigned URL for the file
+            presigned_url = s3_client.generate_presigned_url(
+                'get_object',
+                Params={
+                    'Bucket': BUCKET_NAME, 
+                    'Key': key
+                },
+                ExpiresIn=3600  # URL valid for 1 hour
+            )
+            
+            documents.append({
+                "filename": filename,
+                "url": presigned_url,
+                "metadata": metadata
+            })
+        
+        return {"documents": documents}
+    
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error listing documents: {str(e)}"
+        )
+    
+@app.delete("/deleteWorkspaceDocument/")
+async def delete_workspace_document(
+    request: dict,
+    token: str = Depends(oauth2_scheme)
+):
+    # Extract data from request
+    workspace_name = request.get("workspace_name")
+    filename = request.get("filename")
+    
+    if not workspace_name or not filename:
+        raise HTTPException(status_code=400, detail="Workspace name and filename are required")
+    
+    # Verify the token
+    secret_key = get_secret_key()
+    try:
+        payload = jwt.decode(token, secret_key, algorithms=["HS256"])
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    email = payload.get("email")
+    if not email:
+        raise HTTPException(status_code=401, detail="Invalid token payload")
+
+    # Get workspace data
+    try:
+        response = workspaceTable.scan(
+            FilterExpression=Attr("name").eq(workspace_name)
+        )
+        workspaces = response.get("Items", [])
+        
+        if not workspaces:
+            raise HTTPException(status_code=404, detail="Workspace not found")
+        
+        workspace = workspaces[0]
+        
+        # Check if user is a member of the workspace and/or the owner
+        is_owner = workspace.get("owner") == email
+        is_member = email in workspace.get("users", [])
+        
+        if not is_member:
+            raise HTTPException(status_code=403, detail="User not authorized to access this workspace")
+        
+        if not is_owner:
+            # You might want to allow only owners to delete files
+            # or implement more sophisticated permission checks
+            # Uncomment if needed:
+            # raise HTTPException(status_code=403, detail="Only workspace owners can delete files")
+            pass
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Error fetching workspace: {str(e)}"
+        )
+
+    # Delete file and its metadata from S3
+    file_key = f"workspaces/{workspace_name}/documents/{filename}"
+    metadata_key = f"{file_key}.metadata.json"
+    
+    try:
+        # Check if the file exists
+        s3_client.head_object(Bucket=BUCKET_NAME, Key=file_key)
+        
+        # Delete the file
+        s3_client.delete_object(Bucket=BUCKET_NAME, Key=file_key)
+        
+        # Try to delete metadata if it exists (won't fail if it doesn't)
+        try:
+            s3_client.head_object(Bucket=BUCKET_NAME, Key=metadata_key)
+            s3_client.delete_object(Bucket=BUCKET_NAME, Key=metadata_key)
+        except:
+            pass  # Metadata file might not exist
+        
+        # Update workspace document list if it exists
+        if "documents" in workspace:
+            workspace["documents"] = [
+                doc for doc in workspace["documents"] 
+                if doc.get("filename") != filename
+            ]
+            workspaceTable.put_item(Item=workspace)
+        
+        return {"message": f"File {filename} deleted successfully"}
+    
+    except s3_client.exceptions.NoSuchKey:
+        raise HTTPException(status_code=404, detail=f"File {filename} not found")
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error deleting file: {str(e)}"
+        )
 
 
 @app.delete("/delete-assistant/")
