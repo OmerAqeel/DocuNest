@@ -1,5 +1,4 @@
-// AssistantsTable.jsx
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   Table,
   TableBody,
@@ -38,6 +37,7 @@ const AssistantsTable = ({
 }) => {
   // Local state for managing which assistant is hovered.
   const [hoveredAssistantId, setHoveredAssistantId] = useState(null);
+
 
   return (
     <Table

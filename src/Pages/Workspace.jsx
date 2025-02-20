@@ -1,4 +1,4 @@
-import { React, useState, useEffect } from "react";
+import { React, useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -32,6 +32,8 @@ import { Ellipsis } from "lucide-react";
 import { Plus } from "lucide-react";
 import { IoCheckmarkDone } from "react-icons/io5";
 import CreateAssistantModal from "@/Components/CreateAssistantModal";
+import WorkspaceFiles from "@/Components/WorkspaceFiles";
+import { Upload, Trash } from "lucide-react";
 
 export const Workspace = () => {
   const user = localStorage.getItem("persist:root");
@@ -51,13 +53,119 @@ export const Workspace = () => {
   const [loading, setLoading] = useState(false);
   const [assistantLoading, setAssistantLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState("");
+  const [workspaceDocuments, setWorkspaceDocuments] = useState([]);
 
   const { userName, workspaceName } = useParams();
   const [workspaceData, setWorkspaceData] = useState({});
   const headerColor = workspaceData.workspace?.[0]?.headerColor;
   const ownerOfWorkspace = workspaceData.workspace?.[0]?.owner;
   const assistants = workspaceData.workspace?.[0]?.assistants;
-  console.log(assistants);
+
+  const fileInputRef = useRef(null);
+
+  const handleUploadWorkspaceDocs = async () => {
+    if (workspaceDocuments.length === 0) {
+      toast.error("Please select files to upload");
+      return;
+    }
+
+    setLoading(true);
+    const formData = new FormData();
+
+    // Add files to formData
+    workspaceDocuments.forEach((file) => {
+      formData.append("files", file);
+    });
+
+    // Add workspace_name and user information
+    formData.append("workspace_name", workspaceName);
+    formData.append("uploaded_by", JSONparsedUser.email);
+
+    try {
+      // Call the backend API to upload files
+      const response = await axios.post(
+        "http://localhost:8000/uploadWorkspaceDoc/",
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+            // "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      toast.success("Files uploaded successfully!");
+      setWorkspaceDocuments([]);
+    } catch (error) {
+      console.error("Error uploading files:", error);
+      toast.error("Failed to upload files. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Update your handleDocumentUpload function
+  const handleDocumentUpload = async (event) => {
+    // 1. Grab files from the file input
+    const files = Array.from(event.target.files);
+    
+    // 2. Create form data
+    const formData = new FormData();
+    files.forEach((file) => {
+      formData.append("files", file);
+    });
+    formData.append("workspace_name", workspaceName);
+    formData.append("uploaded_by", JSONparsedUser.Name);
+  
+    // 3. Make the API call
+    try {
+      setLoading(true);
+      const response = await axios.post(
+        "http://localhost:8000/uploadWorkspaceDoc/",
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+            // Leave out "Content-Type"; Axios will set the correct boundary
+          },
+        }
+      );
+  
+      toast.success("Files uploaded successfully!");
+      // Clear the file input if you like:
+      event.target.value = "";
+    } catch (error) {
+      console.error("Error uploading files:", error);
+      toast.error("Failed to upload files. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+
+  // Update the handleUploadClick function
+  const handleUploadClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  // Add a button to trigger the upload after files are selected
+  // Place this in your JSX where appropriate, for example near the document list
+  // const renderUploadButton = () => {
+  //   if (workspaceDocuments.length > 0) {
+  //     return (
+  //       <Button
+  //         className="upload-button"
+  //         onClick={handleUploadWorkspaceDocs}
+  //         disabled={loading}
+  //       >
+  //         {loading ? "Uploading..." : "Upload Selected Files"}
+  //       </Button>
+  //     );
+  //   }
+  //   return null;
+  // };
 
   const handleAssistantNewBtnClick = () => {
     setAssistantNewBtnClicked(false);
@@ -510,6 +618,32 @@ export const Workspace = () => {
               New
             </Button>
           </div>
+        ) : userTab === "documents" ? (
+          <div className="table-header-container">
+            <h1 className="table-title">Workspace Documents</h1>
+            <input
+              ref={fileInputRef}
+              id="file-upload"
+              type="file"
+              multiple
+              style={{ display: "none" }}
+              onChange={handleDocumentUpload} // <-- Use the state updater here
+            />
+
+            <Button
+              variant="outline"
+              style={{
+                borderRadius: "10px",
+                width: "100px",
+                backgroundColor: headerColor,
+                color: "white",
+              }}
+              onClick={handleUploadClick}
+            >
+              <Plus />
+              File
+            </Button>
+          </div>
         ) : null}
         {assistantNewBtnClicked ? (
           <>
@@ -534,6 +668,11 @@ export const Workspace = () => {
             formatDate={formatDate}
             assistantLoading={assistantLoading}
             page={"workspace"}
+          />
+        ) : userTab === "documents" ? (
+          <WorkspaceFiles
+            workspaceName={workspaceName}
+            // onFileDelete={handleFileDelete}
           />
         ) : null}
       </div>
