@@ -1,4 +1,4 @@
-import { React, useEffect, useState } from "react";
+import { React, useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { VscHubot } from "react-icons/vsc";
@@ -30,6 +30,8 @@ export const Navbar = () => {
   const [notifications, setNotifications] = useState([]);
   const [notificationCount, setNotificationCount] = useState(0);
   const [notificationRead, setNotificationRead] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false); // ✅ Track dropdown state
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
 
   const handleEmailChange = (e) => {
     setTextEntered(e.target.value);
@@ -97,25 +99,114 @@ export const Navbar = () => {
     }
   };
 
+  // **Toggle Dropdown**
+  const toggleDropdown = () => {
+    setDropdownOpen((prev) => !prev);
+  };
+
+  // **Fetch Notifications**
   useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const token = sessionStorage.getItem("authToken");
+        if (!token) return;
+        const response = await axios.get(
+          "http://localhost:8000/notifications",
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        setNotifications(response.data.notifications);
+        setNotificationCount(response.data.notifications.length);
+      } catch (error) {
+        console.error("Error fetching notifications:", error);
+      }
+    };
     fetchNotifications();
   }, []);
 
-  // clearing the notifications
+  const handleNotificationClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsNotificationOpen(!isNotificationOpen);
+  };
+
+  // **Mark as Read When Dropdown Closes**
   useEffect(() => {
-    if (notificationRead) {
+    if (!dropdownOpen && notifications.length > 0) {
+      clearNotifications();
+    }
+  }, [dropdownOpen]);
+
+  // **Clear Notifications**
+  const clearNotifications = async () => {
+    try {
+      await axios.post("http://localhost:8000/clear-notifications", null, {
+        headers: {
+          Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+        },
+      });
       setNotifications([]);
       setNotificationCount(0);
+    } catch (error) {
+      console.error("Error clearing notifications:", error);
     }
-  }, [notificationRead]);
+  };
+
+  const hasClearedNotifications = useRef(false); // ✅ Track if the API has already been called
+
+  const handleCloseNotifications = async () => {
+    try {
+      if (!notificationRead && notifications.length > 0) {
+        await axios.post("http://localhost:8000/clear-notifications", null, {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+          },
+        });
+
+        setNotificationRead(true);
+        setNotificationCount(0);
+        setNotifications([]);
+      }
+      setIsNotificationOpen(false);
+    } catch (error) {
+      console.error("Error clearing notifications:", error);
+    }
+  };
+
+  // useEffect(() => {
+  //   document.getElementById("notification-btn")?.addEventListener("click", handleNotificationClick);
+
+  //   return () => {
+  //     document.getElementById("notification-btn")?.removeEventListener("click", handleNotificationClick);
+  //   };
+  // }, []);
+
+  // Click outside handler
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      const dropdown = document.getElementById("notification-dropdown");
+      const button = document.getElementById("notification-btn");
+
+      if (
+        dropdown &&
+        !dropdown.contains(event.target) &&
+        !button.contains(event.target)
+      ) {
+        handleCloseNotifications();
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [notificationRead, notifications]);
 
   return (
-    <div className="header-container"
-        onMouseEnter={(e) => (e.target.style.cursor = "pointer")}
+    <div
+      className="header-container"
+      onMouseEnter={(e) => (e.target.style.cursor = "pointer")}
     >
-      <h1 className="header-title"
-      onClick={() => navigate("/dashboard")}
-      >
+      <h1 className="header-title" onClick={() => navigate("/dashboard")}>
         <VscHubot size={35} /> DocuNest
       </h1>
       {location.pathname === "/signup" ? (
@@ -126,7 +217,9 @@ export const Navbar = () => {
         <Link to="/signup">
           <Button className="signIn-btn">Sign Up</Button>
         </Link>
-      ) : location.pathname === "/dashboard" || /^\/[^/]+\/[^/]+$/.test(location.pathname)||location.pathname === "/profile" ?  ( //
+      ) : location.pathname === "/dashboard" ||
+        /^\/[^/]+\/[^/]+$/.test(location.pathname) ||
+        location.pathname === "/profile" ? (
         <div className="dashboard-actions">
           <DropdownMenu
             style={{
@@ -168,8 +261,7 @@ export const Navbar = () => {
                   placeholder="Type here"
                   value={textEntered}
                   onChange={handleEmailChange}
-                ></Textarea>
-
+                />
                 <Button
                   style={{
                     borderRadius: "10px",
@@ -189,59 +281,98 @@ export const Navbar = () => {
               </DropdownMenuGroup>
             </DropdownMenuContent>
           </DropdownMenu>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                className="notification-btn"
-                style={{ position: "relative" }}
-                onClick={() => setNotificationRead(true)}
+
+          {/* Modified Notification Section */}
+          <div
+            className="notification-container"
+            style={{ position: "relative" }}
+          >
+            <button
+              id="notification-btn"
+              className="notification-btn"
+              onClick={handleNotificationClick}
+              style={{
+                position: "relative",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: "none",
+                border: "none",
+                padding: "8px",
+                cursor: "pointer",
+              }}
+            >
+              <Bell style={{ height: "22px", width: "22px" }} />
+              {notificationCount > 0 && !notificationRead && (
+                <span
+                  style={{
+                    position: "absolute",
+                    top: "-5px",
+                    right: "-5px",
+                    backgroundColor: "red",
+                    color: "white",
+                    borderRadius: "50%",
+                    width: "16px",
+                    height: "16px",
+                    fontSize: "12px",
+                    textAlign: "center",
+                    lineHeight: "16px",
+                  }}
+                >
+                  {notificationCount}
+                </span>
+              )}
+            </button>
+
+            {isNotificationOpen && (
+              <div
+                id="notification-dropdown"
+                style={{
+                  position: "absolute",
+                  top: "100%",
+                  right: "50%",
+                  transform: "translateX(50%)",
+                  backgroundColor: "white",
+                  border: "1px solid #ccc",
+                  borderRadius: "4px",
+                  boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                  width: "250px",
+                  maxHeight: "400px",
+                  overflowY: "auto",
+                  zIndex: 50,
+                  marginTop: "8px",
+                }}
               >
-                <Bell
-                  style={{ height: "22px", width: "22px" }}
-                  onClick={() => setNotificationRead(true)}
-                />
-                {notificationCount > 0 && notificationRead === false && (
-                  <span
+                {notifications.length > 0 ? (
+                  notifications.map((notification, index) => (
+                    <div
+                      key={index}
+                      style={{
+                        padding: "10px",
+                        fontSize: "14px",
+                        borderBottom: "1px solid #eee",
+                        textAlign: "left", // Added this to align text to the left
+                        width: "100%", // Added to ensure full width
+                      }}
+                    >
+                      {notification}
+                    </div>
+                  ))
+                ) : (
+                  <div
                     style={{
-                      position: "absolute",
-                      top: "-5px",
-                      right: "-5px",
-                      backgroundColor: "red",
-                      color: "white",
-                      borderRadius: "50%",
-                      width: "16px",
-                      height: "16px",
-                      fontSize: "12px",
-                      textAlign: "center",
-                      lineHeight: "16px",
+                      padding: "10px",
+                      fontSize: "14px",
+                      textAlign: "left", // Added this to align "No notifications" to the left
                     }}
                   >
-                    {notificationCount}
-                  </span>
-                )}
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-            style={{
-              overflowY: "auto",
-            }}
-            >
-              {notifications.length > 0 ? (
-                notifications.map((notification, index) => (
-                  <div
-                    key={index}
-                    style={{ padding: "10px", fontSize: "14px" }}
-                  >
-                    {notification}
+                    No notifications
                   </div>
-                ))
-              ) : (
-                <div style={{ padding: "10px", fontSize: "14px" }}>
-                  No notifications
-                </div>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                )}
+              </div>
+            )}
+          </div>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -291,7 +422,7 @@ export const Navbar = () => {
           <h1
             className="assistant-name"
             style={{
-              fontSize: "20px", // Font size
+              fontSize: "20px",
               fontWeight: "bold",
               fontStyle: "italic",
             }}

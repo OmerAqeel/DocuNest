@@ -749,6 +749,37 @@ async def get_notifications(token: str = Depends(oauth2_scheme)):
     return {"notifications": notifications}
 
 
+@app.post("/clear-notifications")
+async def clear_notifications(token: str = Depends(oauth2_scheme)):
+    """
+    Clear notifications for the user based on their email.
+    """
+    # Decode the token to get user email
+    secret_key = get_secret_key()
+    try:
+        payload = jwt.decode(token, secret_key, algorithms=["HS256"])
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    email = payload.get("email")
+    if not email:
+        raise HTTPException(status_code=401, detail="Invalid token payload")
+
+    # Fetch user data from DynamoDB using email
+    response = usersTable.get_item(Key={"email": email})
+    user_data = response.get("Item")
+    if not user_data:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Clear notifications
+    user_data["notifications"] = []
+
+    # Update DynamoDB
+    usersTable.put_item(Item=user_data)
+
+    return {"message": "Notifications cleared successfully"}
+
+
 
 @app.post("/upload/")
 async def upload_files(
