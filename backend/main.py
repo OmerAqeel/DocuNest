@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from fastapi import Depends
@@ -216,6 +216,123 @@ async def create_workspace(request: WorkspaceCreateRequest):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating workspace: {e}")
+
+
+
+@app.delete("/delete-workspace/")
+async def delete_workspace(request: Request, token: str = Depends(oauth2_scheme)):
+    # Get data from request body
+    try:
+        data = await request.json()
+        workspace_name = data.get("workspaceName")
+        
+        if not workspace_name:
+            raise HTTPException(status_code=400, detail="Workspace name is required")
+            
+    except Exception as e:
+        raise HTTPException(status_code=400, detail="Invalid request body")
+
+    # Decode the token and verify the user
+    secret_key = get_secret_key()
+    try:
+        payload = jwt.decode(token, secret_key, algorithms=["HS256"])
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    email = payload.get("email")
+    if not email:
+        raise HTTPException(status_code=401, detail="Invalid token payload")
+
+    # Fetch workspace data
+    response = workspaceTable.scan(
+        FilterExpression=Attr("name").eq(workspace_name)
+    )
+    workspaces = response.get("Items", [])
+    if not workspaces:
+        raise HTTPException(status_code=404, detail="Workspace not found")
+
+    workspace = workspaces[0]
+
+    # Check if the user is the owner
+    if workspace.get("owner") != email:
+        raise HTTPException(status_code=403, detail="Only the owner can delete the workspace")
+
+    # Delete the workspace
+    try:
+        workspaceTable.delete_item(Key={"name": workspace_name})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to delete workspace")
+
+    # Notify each user
+    for user_email in workspace.get("users", []):
+        try:
+            response = usersTable.get_item(Key={"email": user_email})
+            user_data = response.get("Item")
+            if not user_data:
+                continue
+
+            # Update notifications field
+            if "notifications" not in user_data:
+                user_data["notifications"] = []
+            user_data["notifications"].append(f"Workspace '{workspace_name}' has been deleted")
+
+            # Update the user entry in DynamoDB
+            usersTable.put_item(Item=user_data)
+        except Exception as e:
+            # Log the error but continue with other users
+            print(f"Failed to notify user {user_email}: {str(e)}")
+            continue
+
+    return {"message": f"Workspace '{workspace_name}' deleted successfully"}
+
+
+@app.post("/leave-workspace/")
+async def leave_workspace(email:str, workspace:str, token: str = Depends(oauth2_scheme)):
+    # Decode the token and verify the user
+    secret_key = get_secret_key()
+    try:
+        payload = jwt.decode(token, secret_key, algorithms=["HS256"])
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    user_email = payload.get("email")
+    if not user_email:
+        raise HTTPException(status_code=401, detail="Invalid token payload")
+
+    # Fetch workspace data
+    response = workspaceTable.scan(
+        FilterExpression=Attr("name").eq(workspace)
+    )
+    workspaces = response.get("Items", [])
+    if not workspaces:
+        raise HTTPException(status_code=404, detail="Workspace not found")
+
+    workspace = workspaces[0]
+
+    # Check if the user is a member of the workspace
+    if user_email not in workspace.get("users", []):
+        raise HTTPException(status_code=403, detail="User not authorized to leave this workspace")
+
+    # Remove the user from the workspace
+    workspace["users"] = [u for u in workspace["users"] if u != user_email]
+
+    # Update the workspace in DynamoDB
+    workspaceTable.put_item(Item=workspace)
+
+    # Fetch user data
+    response = usersTable.get_item(Key={"email": user_email})
+    user_data = response.get("Item")
+    if not user_data:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Remove the workspace from the user's workspace list
+    if "workspaces" in user_data:
+        user_data["workspaces"] = [w for w in user_data["workspaces"] if w != workspace]
+
+    # Update the user in DynamoDB
+    usersTable.put_item(Item=user_data)
+
+    return {"message": "User removed from workspace"}
     
 
 @app.post("/create-workspace-assistant")
@@ -926,7 +1043,7 @@ async def save_conversation(request: ConversationRequest):
 async def get_conversations(user_id: str, assistant_id: str):
     try:
         response = conversationsTable.scan(
-            FilterExpression=Attr("user_id").eq(user_id) & Attr("assistant_id").eq(assistant_id)
+            FilterExpression=Attr("assistant_id").eq(assistant_id)
         )
         conversations = response.get("Items", [])
         return {"conversations": conversations}

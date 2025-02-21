@@ -26,6 +26,7 @@ import { CircleX } from "lucide-react";
 import { TbLayoutSidebar } from "react-icons/tb";
 import { RiChatNewLine } from "react-icons/ri";
 
+
 export const Chat = () => {
   const user = localStorage.getItem("persist:root");
   const navigate = useNavigate();
@@ -209,12 +210,15 @@ export const Chat = () => {
       setSideBarOpened(false);
     }
     try {
+      const workspaceName = sessionStorage.getItem("workspaceName");
+      const userIdParam = userOnWorkspaceAssistant === "true" ? workspaceName : user_id;
+      
       const response = await axios.get(
         `http://localhost:8000/get-file/${fileName}`,
         {
           params: {
             assistant_id: assistantId,
-            user_id: user_id,
+            user_id: userIdParam,
           },
         }
       );

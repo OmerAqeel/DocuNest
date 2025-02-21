@@ -26,6 +26,18 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Pencil, Trash, Ellipsis } from "lucide-react";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import axios from "axios";
 
 const AssistantsTable = ({
   assistants,
@@ -37,9 +49,46 @@ const AssistantsTable = ({
 }) => {
   // Local state for managing which assistant is hovered.
   const [hoveredAssistantId, setHoveredAssistantId] = useState(null);
+  const [openSheet, setOpenSheet] = useState(false);
+  const [selectedAssistant, setSelectedAssistant] = useState(null);
+  const [editedName, setEditedName] = useState("");
+  const [editedDescription, setEditedDescription] = useState("");
+
+  // Open Sheet & Load Assistant Data
+  const handleEditClick = (assistant) => {
+    setSelectedAssistant(assistant);
+    setEditedName(assistant.name);
+    setEditedDescription(assistant.description || ""); // Default if empty
+    setOpenSheet(true);
+  };
+
+  // Update Assistant API Call
+  const handleUpdateAssistant = async () => {
+    try {
+      await axios.put(
+        "http://localhost:8000/update-assistant", // Adjust API endpoint
+        {
+          id: selectedAssistant.id,
+          name: editedName,
+          description: editedDescription,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+          },
+        }
+      );
+      setOpenSheet(false);
+      alert("Assistant updated successfully!"); // Replace with toast if needed
+    } catch (error) {
+      console.error("Error updating assistant:", error);
+      alert("Failed to update assistant.");
+    }
+  };
 
 
   return (
+    <>
     <Table
     >
       <TableHeader className="DataTable-header">
@@ -130,6 +179,7 @@ const AssistantsTable = ({
                       style={{
                         cursor: "pointer",
                       }}
+                      onClick={() => handleEditClick(assistant)}
                     >
                       <Pencil size={15} />
                       Edit
@@ -184,6 +234,40 @@ const AssistantsTable = ({
         )}
       </TableBody>
     </Table>
+
+{/* 🔹 Sheet for Editing Assistant */}
+<Sheet open={openSheet} onOpenChange={setOpenSheet}>
+<SheetContent>
+  <SheetHeader>
+    <SheetTitle>Edit Assistant</SheetTitle>
+    <SheetDescription>
+      Modify the details of your assistant.
+    </SheetDescription>
+  </SheetHeader>
+  <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "16px" }}>
+    <Label>Name</Label>
+    <Input
+      type="text"
+      value={editedName}
+      onChange={(e) => setEditedName(e.target.value)}
+      placeholder="Enter assistant name"
+    />
+    <Label>Description</Label>
+    <Textarea
+      value={editedDescription}
+      onChange={(e) => setEditedDescription(e.target.value)}
+      placeholder="Enter assistant description"
+    />
+    <Button
+      onClick={handleUpdateAssistant}
+      style={{ marginTop: "12px", backgroundColor: "#4ade80", color: "white" }}
+    >
+      Save Changes
+    </Button>
+  </div>
+</SheetContent>
+</Sheet>
+</>
   );
 };
 

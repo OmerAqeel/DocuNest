@@ -20,7 +20,19 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { toast, Toaster } from "sonner";
+import { LogOut } from "lucide-react";
 import AssistantsTable from "@/Components/AssistantsTable";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
@@ -108,7 +120,7 @@ export const Workspace = () => {
   const handleDocumentUpload = async (event) => {
     // 1. Grab files from the file input
     const files = Array.from(event.target.files);
-    
+
     // 2. Create form data
     const formData = new FormData();
     files.forEach((file) => {
@@ -116,7 +128,7 @@ export const Workspace = () => {
     });
     formData.append("workspace_name", workspaceName);
     formData.append("uploaded_by", JSONparsedUser.Name);
-  
+
     // 3. Make the API call
     try {
       setLoading(true);
@@ -130,7 +142,7 @@ export const Workspace = () => {
           },
         }
       );
-  
+
       toast.success("Files uploaded successfully!");
       // Clear the file input if you like:
       event.target.value = "";
@@ -141,7 +153,6 @@ export const Workspace = () => {
       setLoading(false);
     }
   };
-  
 
   // Update the handleUploadClick function
   const handleUploadClick = () => {
@@ -149,23 +160,6 @@ export const Workspace = () => {
       fileInputRef.current.click();
     }
   };
-
-  // Add a button to trigger the upload after files are selected
-  // Place this in your JSX where appropriate, for example near the document list
-  // const renderUploadButton = () => {
-  //   if (workspaceDocuments.length > 0) {
-  //     return (
-  //       <Button
-  //         className="upload-button"
-  //         onClick={handleUploadWorkspaceDocs}
-  //         disabled={loading}
-  //       >
-  //         {loading ? "Uploading..." : "Upload Selected Files"}
-  //       </Button>
-  //     );
-  //   }
-  //   return null;
-  // };
 
   const handleAssistantNewBtnClick = () => {
     setAssistantNewBtnClicked(false);
@@ -310,17 +304,15 @@ export const Workspace = () => {
   const handleLeaveButton = async () => {
     try {
       await axios.post(
-        "http://localhost:8000/leave-workspace",
-        {
-          email: JSONparsedUser.email,
-          workspaceName: workspaceName,
-        },
+        `http://localhost:8000/leave-workspace/?email=${JSONparsedUser.email}&workspace=${workspaceName}`,
+        {},
         {
           headers: {
             Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
           },
         }
       );
+      navigate("/dashboard");
     } catch (error) {
       console.log(error);
     }
@@ -328,20 +320,22 @@ export const Workspace = () => {
 
   const handleDeleteButton = async () => {
     try {
-      await axios.post(
-        "http://localhost:8000/delete-workspace",
-        {
+      await axios.delete("http://localhost:8000/delete-workspace", {
+        headers: {
+          Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
+        },
+        data: {
           email: JSONparsedUser.email,
           workspaceName: workspaceName,
         },
-        {
-          headers: {
-            Authorization: `Bearer ${sessionStorage.getItem("authToken")}`,
-          },
-        }
-      );
+      });
     } catch (error) {
-      console.log(error);
+      console.log(
+        "Error deleting workspace:",
+        error.response?.data || error.message
+      );
+    } finally {
+      navigate("/dashboard");
     }
   };
 
@@ -460,7 +454,33 @@ export const Workspace = () => {
         <div className="toolsbar-container">
           {ownerOfWorkspace !== JSONparsedUser.email ? (
             <>
-              <Button className="leave-button">Leave</Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button className="leave-button">
+                    <LogOut size={16} />
+                    Leave Workspace
+                  </Button>
+                </AlertDialogTrigger>
+
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Leave Workspace</AlertDialogTitle>
+                  </AlertDialogHeader>
+                  <AlertDialogDescription>
+                    Are you sure you want to leave this workspace? You will no
+                    longer have access to its contents.
+                  </AlertDialogDescription>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleLeaveButton}
+                      style={{ backgroundColor: "red", color: "white" }}
+                    >
+                      Leave
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </>
           ) : (
             <>
@@ -471,7 +491,33 @@ export const Workspace = () => {
               >
                 Members
               </Button>
-              <Button className="delete-button">Delete Workspace</Button>
+              {/* 🗑️ Delete Workspace Button with Alert Dialog */}
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button className="delete-button">
+                    <Trash size={16} />
+                    Delete Workspace
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Workspace</AlertDialogTitle>
+                  </AlertDialogHeader>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete this workspace? This action
+                    cannot be undone.
+                  </AlertDialogDescription>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDeleteButton}
+                      style={{ backgroundColor: "red", color: "white" }}
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </>
           )}
           {membersBtnClicked ? (

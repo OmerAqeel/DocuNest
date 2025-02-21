@@ -307,8 +307,8 @@ export const Navbar = () => {
                 <span
                   style={{
                     position: "absolute",
-                    top: "-5px",
-                    right: "-5px",
+                    top: "0",
+                    right: "0",
                     backgroundColor: "red",
                     color: "white",
                     borderRadius: "50%",
