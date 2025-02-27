@@ -2,6 +2,7 @@ import React from "react";
 import axios from "axios";
 import { v4 as uuidv4 } from "uuid";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { VscHubot } from "react-icons/vsc";
 import "../Styles/SignUp.css";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,7 @@ export const SignUp = () => {
   const [thirdStep, setThirdStep] = useState(false);
   const [emailIsValid, setEmailIsValid] = useState(false);
 
+  const navigate = useNavigate();
   useEffect(() => {
     if (name.length >= 2) {
       setValid("-valid");
@@ -110,6 +112,8 @@ export const SignUp = () => {
       if (response.status === 200) {
         console.log("User saved successfully:", response.data);
         alert("Sign-up successful!");
+        // navigate the user to sign-in page
+        navigate("/signin");
       }
     } catch (error) {
       console.error("Error saving user:", error.response?.data || error.message);

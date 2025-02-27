@@ -168,6 +168,30 @@ async def create_assistant(assistant: dict, token: str = Depends(oauth2_scheme))
 
     return user_data
 
+
+# @app.get("/get-assistant-files/")
+# async def get_assistant_files(assistant_id: str, userOnWorkspaceAssistant: bool):
+#     try:
+
+#         if(userOnWorkspaceAssistant):
+#             response = workspaceTable.scan(
+#                 FilterExpression=Attr("assistant_id").eq(assistant_id)
+#             )
+#             assistants = response.get("Items", [])
+
+#             #get the names of files from the assistant using the assistant ID
+#             assistant_files = []
+#             for assistant in assistants:
+#                 assistant_files.append(assistant.get("files"))
+#             return {"assistant_files": assistant_files}
+#         else:
+#             response = usersTable.scan(
+#                 FilterExpression=Attr("assistant_id").eq(assistant_id)
+#             )
+#             assistants = response.get("Items", [])
+
+    
+
 @app.post("/create-workspace")
 async def create_workspace(request: WorkspaceCreateRequest):
     workspace_id = request.workspace.get("id")
@@ -1133,7 +1157,7 @@ async def test_relevancy(
         max_tokens=220,
         messages=[
            {"role": "system", "content": "You are an expert assistant designed to provide clear, concise, and well-structured responses to queries. Your responses must be accurate, specific, and directly address the query without unnecessary explanations or comments."},
-           {"role": "user", "content": f"I need you to generate a precise and structured response to the following query: '{query}'. \n\nYou have access to:\n1. **Top Relevant Chunks**: {results}\n\nYour task is to:\n\n- Avoid assumptions or speculative answers. Use only the provided data.\n- Format the output in a **structured and organised manner**.\n\n**Important Notes:**\n- Do **not** include extra comments, explanations and just be stright to the points rather than being verbose\n- Ensure the response is **factually accurate** and **specific** to the query.\n\nNow, generate the response for the given query."}  
+           {"role": "user", "content": f"I need you to generate a precise and structured response to the following query: '{query}'. \n\nYou have access to:\n1. **Top Relevant Chunks**: {results}\n\nYour task is to:\n\n- Avoid assumptions or speculative answers and any information from your own learning. Use only the provided data.\n- Format the output in a **structured and organised manner**.\n\n**Important Notes:**\n- Do **not** include extra comments, explanations and just be stright to the points rather than being verbose\n- Ensure the response is **factually accurate** and **specific** to the query.\n\nNow, generate the response for the given query."}  
         ]
     )
     

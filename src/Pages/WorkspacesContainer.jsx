@@ -114,6 +114,7 @@ useEffect(() => {
                 }}
                 onClick={() => {
                   navigate(`/${userName}/${workspace.workspaceName}`);
+                  sessionStorage.setItem("userOnWorkspaceAssistant", true);
                   sessionStorage.setItem("workspaceName", workspace.workspaceName);
                 }}
               >
