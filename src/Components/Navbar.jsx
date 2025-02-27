@@ -206,7 +206,10 @@ export const Navbar = () => {
       className="header-container"
       onMouseEnter={(e) => (e.target.style.cursor = "pointer")}
     >
-      <h1 className="header-title" onClick={() => navigate("/dashboard")}>
+      <h1 className="header-title" 
+      onClick={() => {
+        navigate("/dashboard");
+      }}>
         <VscHubot size={35} /> DocuNest
       </h1>
       {location.pathname === "/signup" ? (
@@ -307,8 +310,8 @@ export const Navbar = () => {
                 <span
                   style={{
                     position: "absolute",
-                    top: "-5px",
-                    right: "-5px",
+                    top: "0",
+                    right: "0",
                     backgroundColor: "red",
                     color: "white",
                     borderRadius: "50%",

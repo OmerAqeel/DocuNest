@@ -26,6 +26,7 @@ import { CircleX } from "lucide-react";
 import { TbLayoutSidebar } from "react-icons/tb";
 import { RiChatNewLine } from "react-icons/ri";
 
+
 export const Chat = () => {
   const user = localStorage.getItem("persist:root");
   const navigate = useNavigate();
@@ -209,12 +210,15 @@ export const Chat = () => {
       setSideBarOpened(false);
     }
     try {
+      const workspaceName = sessionStorage.getItem("workspaceName");
+      const userIdParam = userOnWorkspaceAssistant === "true" ? workspaceName : user_id;
+      
       const response = await axios.get(
         `http://localhost:8000/get-file/${fileName}`,
         {
           params: {
             assistant_id: assistantId,
-            user_id: user_id,
+            user_id: userIdParam,
           },
         }
       );
@@ -296,6 +300,19 @@ const hexToRgba = (hex, alpha = 1) => {
   useEffect(() => {
     fetchConversations();
   }, []);
+
+  // CSS for the typing animation
+  const typingIndicatorStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    padding: '15px',
+    marginBottom: '10px',
+    borderRadius: '10px',
+    backgroundColor: hexToRgba(workspaceColor, 0.1) || 'rgba(129, 140, 248, 0.1)',
+    width: 'fit-content',
+    maxWidth: '80%'
+  };
 
   return (
     <>
@@ -473,6 +490,17 @@ const hexToRgba = (hex, alpha = 1) => {
                       <ReactMarkdown>{botMessage}</ReactMarkdown>
                     </div>
                   )}
+
+                  {/* Add the thinking/typing indicator */}
+                  {isThinking && (
+                    <div style={typingIndicatorStyle} className="typing-indicator">
+                      <div className="typing-dots">
+                        <span className="dot dot1"></span>
+                        <span className="dot dot2"></span>
+                        <span className="dot dot3"></span>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className="chat-input-container">
                   <Input
@@ -558,6 +586,42 @@ const hexToRgba = (hex, alpha = 1) => {
           </div>
         </ResizablePanelGroup>
       </TooltipProvider>
+
+      {/* Add CSS for the typing animation */}
+      <style jsx>{`
+        .typing-dots {
+          display: flex;
+          align-items: center;
+        }
+        
+        .dot {
+          display: inline-block;
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          margin-right: 4px;
+          background-color: #666;
+          animation: wave 1.3s linear infinite;
+        }
+        
+        .dot2 {
+          animation-delay: 0.2s;
+        }
+        
+        .dot3 {
+          animation-delay: 0.4s;
+          margin-right: 0;
+        }
+        
+        @keyframes wave {
+          0%, 60%, 100% {
+            transform: initial;
+          }
+          30% {
+            transform: translateY(-8px);
+          }
+        }
+      `}</style>
     </>
   );
 };

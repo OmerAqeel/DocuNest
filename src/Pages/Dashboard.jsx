@@ -68,6 +68,8 @@ export const Dashboard = () => {
   const workspaceID = uuidv4();
   const [workspaceCreated, setWorkspaceCreated] = useState(false);
 
+  sessionStorage.setItem("userOnWorkspaceAssistant", false);
+
   const listOfColors = [
     "#dc2626", // Red
     "#ea580c", // Orange
