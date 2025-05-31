@@ -70,7 +70,7 @@ class RelevanceScorer:
             # Boost score if chunk contains any of the key terms extracted from the query
             for term in key_terms:
                 if term in chunk.lower():  # Ensure case-insensitive matching
-                    score += 0.2  # Boost score (adjust this value as necessary)
+                    score += 0.2  # Boost score
             adjusted_scores.append(score)
 
         # Get the indices of the top N most relevant chunks

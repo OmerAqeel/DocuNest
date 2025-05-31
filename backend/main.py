@@ -1156,8 +1156,33 @@ async def test_relevancy(
         model="gpt-4o",
         max_tokens=220,
         messages=[
-           {"role": "system", "content": "You are an expert assistant designed to provide clear, concise, and well-structured responses to queries. Your responses must be accurate, specific, and directly address the query without unnecessary explanations or comments."},
-           {"role": "user", "content": f"I need you to generate a precise and structured response to the following query: '{query}'. \n\nYou have access to:\n1. **Top Relevant Chunks**: {results}\n\nYour task is to:\n\n- Avoid assumptions or speculative answers and any information from your own learning. Use only the provided data.\n- Format the output in a **structured and organised manner**.\n\n**Important Notes:**\n- Do **not** include extra comments, explanations and just be stright to the points rather than being verbose\n- Ensure the response is **factually accurate** and **specific** to the query.\n\nNow, generate the response for the given query."}  
+            {
+                "role": "system",
+                "content": "You are an expert assistant designed to provide clear, concise, and well-structured responses to queries. Your responses must be accurate, specific, and directly address the query without unnecessary explanations or comments."
+            },
+            {
+                "role": "user",
+                "content": f"I need you to generate a precise and structured response to the following query: '{query}'.\n\n"
+                           f"You have access to:\n"
+                           f"1. **Top Relevant Chunks**: {results}\n\n"
+                           "Your task is to:\n\n"
+                           "- Avoid assumptions or speculative answers and any information from your own learning. Use only the provided data.\n"
+                           "- Format the output in a **structured and organised manner**.\n\n"
+                           "### **Example Input and Output:**\n\n"
+                           "#### **Example Input (Large Text Chunk)**\n"
+                           "\"Quantum computing is a rapidly evolving field that leverages the principles of quantum mechanics to perform computations far beyond the capability of classical computers. Traditional computers use bits that represent 0s and 1s, whereas quantum computers use quantum bits (qubits), which can exist in superposition—holding multiple states at once. This allows them to perform parallel computations, making them exponentially faster for certain tasks such as cryptography, material simulation, and complex optimization problems. However, quantum computing still faces challenges like error rates, scalability, and stability due to quantum decoherence.\"\n\n"
+                           "#### **Example Output (Concise Summary)**\n"
+                           "- **Quantum Computing:** Uses quantum mechanics for superior computational power.\n"
+                           "- **Key Difference:** Classical computers use bits (0/1), while quantum computers use qubits (superposition of states).\n"
+                           "- **Advantages:** Parallel computations for cryptography, material simulation, and optimization.\n"
+                           "- **Challenges:** High error rates, scalability issues, and stability due to quantum decoherence.\n\n"
+                           "---\n\n"
+                           "### **Your Task:**\n"
+                           "- Follow this structured approach when summarizing.\n"
+                           "- Do **not** include extra comments or explanations—be direct and structured.\n"
+                           "- Ensure the response is **factually accurate** and **specific** to the query.\n\n"
+                           "Now, generate the response for the given query."
+            }
         ]
     )
     

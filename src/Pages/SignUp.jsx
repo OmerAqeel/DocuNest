@@ -106,7 +106,7 @@ export const SignUp = () => {
         name,
         email,
         password,
-        ApiKey: "",
+        // ApiKey: "",
       });
   
       if (response.status === 200) {

@@ -336,6 +336,13 @@ export const Workspace = () => {
       );
     } finally {
       navigate("/dashboard");
+      toast.success(
+        `Workspace "${workspaceName}" deleted successfully.`,
+        {
+          icon: <IoCheckmarkDone style={{ color: "white" }} size={20} />,
+          className: "custom-toast",
+        }
+      );
     }
   };
 
