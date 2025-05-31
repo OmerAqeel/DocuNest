@@ -30,8 +30,8 @@ export const Profile = () => {
   // getting the name of the user from the local storage
   const Name = JSONparsedUser?.Name;
   const Email = JSONparsedUser?.email;
-  const assistantsLength = JSONparsedUser?.assistants.length;
-  const workspaceLength = JSONparsedUser?.workspaces.length;
+  const assistantsLength = (JSONparsedUser?.assistants.length) || 0;
+  const workspaceLength = (JSONparsedUser?.workspaces.length) || 0;
 
   const apiKey = JSONparsedUser?.apiKey;
 
